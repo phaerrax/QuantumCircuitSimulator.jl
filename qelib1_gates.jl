@@ -40,16 +40,20 @@ function gate_id(sites::Vector{<:Index}, n::Int)
     return ITensors.op("id", sites, n)
 end
 
-function gate_u1(sites::Vector{<:Index}, n::Int; λ::Real)
+function gate_u1(sites::Vector{<:Index}, n::Int, λ::Real)
     return ITensors.op("U", sites, n; θ=0, ϕ=0, λ=λ)
 end
 
-function gate_u2(sites::Vector{<:Index}, n::Int; ϕ::Real, λ::Real)
+function gate_u2(sites::Vector{<:Index}, n::Int, ϕ::Real, λ::Real)
     return ITensors.op("U", sites, n; θ=pi/2, ϕ=ϕ, λ=λ)
 end
 
-function gate_u3(sites::Vector{<:Index}, n::Int; θ::Real, ϕ::Real, λ::Real)
+function gate_u3(sites::Vector{<:Index}, n::Int, θ::Real, ϕ::Real, λ::Real)
     return ITensors.op("U", sites, n; θ=θ, ϕ=ϕ, λ=λ)
+end
+
+function gate_u(sites::Vector{<:Index}, n::Int, θ::Real, ϕ::Real, λ::Real)
+    return gate_u3(sites, n, θ, ϕ, λ)
 end
 
 function gate_cx(sites::Vector{<:Index}, control::Int, target::Int)
@@ -100,15 +104,15 @@ function gate_c4x(sites::Vector{<:Index}, control1::Int, control2::Int, control3
     return ITensors.op("CCCCNOT", sites, control1, control2, control3, control4, target)
 end
 
-function gate_rx(sites::Vector{<:Index}, n::Int; θ::Number)
+function gate_rx(sites::Vector{<:Index}, n::Int, θ::Number)
     return ITensors.op("Rx", sites, n; θ=θ)
 end
 
-function gate_ry(sites::Vector{<:Index}, n::Int; θ::Number)
+function gate_ry(sites::Vector{<:Index}, n::Int, θ::Number)
     return ITensors.op("Ry", sites, n; θ=θ)
 end
 
-function gate_rz(sites::Vector{<:Index}, n::Int; θ::Number)
+function gate_rz(sites::Vector{<:Index}, n::Int, θ::Number)
     return ITensors.op("Rz", sites, n; θ=θ)
 end
 
@@ -132,28 +136,28 @@ function gate_cswap(sites::Vector{<:Index}, control::Int, target1::Int, target2:
     return ITensors.op("CSwap", sites, control, target1, target2)
 end
 
-function gate_crx(sites::Vector{<:Index}, control::Int, target::Int; θ::Number)
+function gate_crx(sites::Vector{<:Index}, control::Int, target::Int, θ::Number)
     return ITensors.op("CRx", sites, control, target; θ=θ)
 end
 
-function gate_cry(sites::Vector{<:Index}, control::Int, target::Int; θ::Number)
+function gate_cry(sites::Vector{<:Index}, control::Int, target::Int, θ::Number)
     return ITensors.op("CRy", sites, control, target; θ=θ)
 end
 
-function gate_crz(sites::Vector{<:Index}, control::Int, target::Int; λ::Number)
+function gate_crz(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
     #return ITensors.op("CRz", sites, control, target; θ=λ)
     # ITensors already provides a `CRz` gate, but we follow the implementation in
     # the qelib1.inc file anyway.
-    return gate_u1(sites, target; λ=λ/2) * gate_cx(sites, control, target) * gate_u1(sites, target; λ=-λ/2) * gate_cx(sites, control, target)
+    return gate_u1(sites, target, λ/2) * gate_cx(sites, control, target) * gate_u1(sites, target,-λ/2) * gate_cx(sites, control, target)
 end
 
-function gate_cu1(sites::Vector{<:Index}, control::Int, target::Int; λ::Number)
-    return gate_u1(sites, control, λ=λ/2) *gate_cx(sites, target, control) *gate_u1(sites, target, λ=-λ/2) *gate_cx(sites, target, control) *gate_u1(sites, target, λ=λ/2)
+function gate_cu1(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
+    return gate_u1(sites, control, λ/2) *gate_cx(sites, target, control) *gate_u1(sites, target, -λ/2) *gate_cx(sites, target, control) *gate_u1(sites, target, λ/2)
 end
 
-function gate_cu3(sites::Vector{<:Index}, control::Int, target::Int;θ::Real, ϕ::Real, λ::Real)
+function gate_cu3(sites::Vector{<:Index}, control::Int, target::Int, θ::Real, ϕ::Real, λ::Real)
     # Implements a controlled U(theta,phi,lambda) gate.
-    return gate_u1(sites, target; λ=(λ-ϕ)/2) *gate_cx(sites, control, target) *gate_u3(sites, target; θ=-θ/2,ϕ=0,λ=-(ϕ+λ)/2) *gate_cx(sites, control, target) *gate_u3(sites, target; θ=θ/2,ϕ=ϕ,λ=0)
+    return gate_u1(sites, target, (λ-ϕ)/2) *gate_cx(sites, control, target) *gate_u3(sites, target, -θ/2,0,-(ϕ+λ)/2) *gate_cx(sites, control, target) *gate_u3(sites, target, θ/2,ϕ,0)
 end
 
 # I don't recognize these gates...
