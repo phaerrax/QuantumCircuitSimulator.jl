@@ -25,7 +25,7 @@ Filter out from the list lines which are preprocessor instructions or file inclu
 function removepreprocessor!(lines::Vector{<:AbstractString})
     # Remove preprocessor lines
     filter!(s -> !occursin("OPENQASM 2.0", s), lines)
-    filter!(s -> !occursin("include", s), lines)
+    return filter!(s -> !occursin("include", s), lines)
 end
 
 """

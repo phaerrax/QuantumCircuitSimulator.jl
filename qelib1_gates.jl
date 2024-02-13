@@ -6,35 +6,35 @@ using ITensors
 
 # We need some operators that ITensors does not define.
 function ITensors.op(::OpName"U", ::SiteType"Qubit"; θ::Real, ϕ::Real, λ::Real)
-  # Return a generic single-qbit SU(2) gate, as defined in arXiv:1707.03429v2.
-  #
-  # U (θ, ϕ, λ) := Rz(ϕ) Ry(θ) Rz(λ) =
-  #
-  #     ⎛ ℯ^{−i(ϕ+λ)/2} cos(θ/2)   −ℯ^{−i(ϕ−λ)/2} sin(θ/2) ⎞
-  #   = ⎜                                                  ⎟
-  #     ⎝ ℯ^{i(ϕ−λ)/2} sin(θ/2)    ℯ^{i(ϕ+λ)/2} cos(θ/2)   ⎠
-  return [
-          ℯ^(−im*(ϕ+λ)/2)*cos(θ/2)   −ℯ^(−im*(ϕ−λ)/2)*sin(θ/2)
-          ℯ^(im*(ϕ−λ)/2)*sin(θ/2)     ℯ^(im*(ϕ+λ)/2)*cos(θ/2)  
-         ]
+    # Return a generic single-qbit SU(2) gate, as defined in arXiv:1707.03429v2.
+    #
+    # U (θ, ϕ, λ) := Rz(ϕ) Ry(θ) Rz(λ) =
+    #
+    #     ⎛ ℯ^{−i(ϕ+λ)/2} cos(θ/2)   −ℯ^{−i(ϕ−λ)/2} sin(θ/2) ⎞
+    #   = ⎜                                                  ⎟
+    #     ⎝ ℯ^{i(ϕ−λ)/2} sin(θ/2)    ℯ^{i(ϕ+λ)/2} cos(θ/2)   ⎠
+    return [
+        cis(-(ϕ + λ) / 2)*cos(θ / 2) -cis(-(ϕ - λ) / 2)*sin(θ / 2)
+        cis((ϕ - λ) / 2)*sin(θ / 2) cis((ϕ + λ) / 2)*sin(θ / 2)
+    ]
 end
 
 function ITensors.op(::OpName"CCCCNOT", st::SiteType"Qubit")
     id = op(OpName("id"), st)
-    not = op(OpName("X"),st)
+    not = op(OpName("X"), st)
     return kron(id, id, id, id, not)
 end
 
 function ITensors.op(::OpName"CH", st::SiteType"Qubit")
     id = op(OpName("id"), st)
-    h = op(OpName("H"),st)
+    h = op(OpName("H"), st)
     return kron(id, h)
 end
 
 ITensors.op(::OpName"id", ::SiteType"Qubit") = [
-                                                1 0
-                                                0 1
-                                               ]
+    1 0
+    0 1
+]
 
 function gate_id(sites::Vector{<:Index}, n::Int)
     return ITensors.op("id", sites, n)
@@ -45,7 +45,7 @@ function gate_u1(sites::Vector{<:Index}, n::Int, λ::Real)
 end
 
 function gate_u2(sites::Vector{<:Index}, n::Int, ϕ::Real, λ::Real)
-    return ITensors.op("U", sites, n; θ=pi/2, ϕ=ϕ, λ=λ)
+    return ITensors.op("U", sites, n; θ=pi / 2, ϕ=ϕ, λ=λ)
 end
 
 function gate_u3(sites::Vector{<:Index}, n::Int, θ::Real, ϕ::Real, λ::Real)
@@ -73,11 +73,11 @@ function gate_z(sites::Vector{<:Index}, n::Int)
 end
 
 function gate_s(sites::Vector{<:Index}, n::Int)
-    return gate_u1(sites, n;  λ=pi/2)
+    return gate_u1(sites, n; λ=pi / 2)
 end
 
 function gate_sdg(sites::Vector{<:Index}, n::Int)  # Adjoint of "S"
-    return gate_u1(sites, n;  λ=-pi/2)
+    return gate_u1(sites, n; λ=-pi / 2)
 end
 
 function gate_h(sites::Vector{<:Index}, n::Int)
@@ -85,22 +85,31 @@ function gate_h(sites::Vector{<:Index}, n::Int)
 end
 
 function gate_t(sites::Vector{<:Index}, n::Int)
-    return gate_u1(sites, n;  λ=pi/4)
+    return gate_u1(sites, n; λ=pi / 4)
 end
 
 function gate_tdg(sites::Vector{<:Index}, n::Int)
-    return gate_u1(sites, n;  λ=-pi/4)
+    return gate_u1(sites, n; λ=-pi / 4)
 end
 
 function gate_ccx(sites::Vector{<:Index}, control1::Int, control2::Int, target::Int)
     return ITensors.op("Toffoli", sites, control1, control2, target)
 end
 
-function gate_c3x(sites::Vector{<:Index}, control1::Int, control2::Int, control3::Int, target::Int)  # CCCNOT
+function gate_c3x(
+    sites::Vector{<:Index}, control1::Int, control2::Int, control3::Int, target::Int
+)  # CCCNOT
     return ITensors.op("CCCNOT", sites, control1, control2, control3, target)
 end
 
-function gate_c4x(sites::Vector{<:Index}, control1::Int, control2::Int, control3::Int, control4::Int, target::Int)  # CCCCNOT
+function gate_c4x(
+    sites::Vector{<:Index},
+    control1::Int,
+    control2::Int,
+    control3::Int,
+    control4::Int,
+    target::Int,
+)  # CCCCNOT
     return ITensors.op("CCCCNOT", sites, control1, control2, control3, control4, target)
 end
 
@@ -148,16 +157,29 @@ function gate_crz(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
     #return ITensors.op("CRz", sites, control, target; θ=λ)
     # ITensors already provides a `CRz` gate, but we follow the implementation in
     # the qelib1.inc file anyway.
-    return gate_u1(sites, target, λ/2) * gate_cx(sites, control, target) * gate_u1(sites, target,-λ/2) * gate_cx(sites, control, target)
+    return gate_u1(sites, target, λ / 2) *
+           gate_cx(sites, control, target) *
+           gate_u1(sites, target, -λ / 2) *
+           gate_cx(sites, control, target)
 end
 
 function gate_cu1(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
-    return gate_u1(sites, control, λ/2) *gate_cx(sites, target, control) *gate_u1(sites, target, -λ/2) *gate_cx(sites, target, control) *gate_u1(sites, target, λ/2)
+    return gate_u1(sites, control, λ / 2) *
+           gate_cx(sites, target, control) *
+           gate_u1(sites, target, -λ / 2) *
+           gate_cx(sites, target, control) *
+           gate_u1(sites, target, λ / 2)
 end
 
-function gate_cu3(sites::Vector{<:Index}, control::Int, target::Int, θ::Real, ϕ::Real, λ::Real)
+function gate_cu3(
+    sites::Vector{<:Index}, control::Int, target::Int, θ::Real, ϕ::Real, λ::Real
+)
     # Implements a controlled U(theta,phi,lambda) gate.
-    return gate_u1(sites, target, (λ-ϕ)/2) *gate_cx(sites, control, target) *gate_u3(sites, target, -θ/2,0,-(ϕ+λ)/2) *gate_cx(sites, control, target) *gate_u3(sites, target, θ/2,ϕ,0)
+    return gate_u1(sites, target, (λ - ϕ) / 2) *
+           gate_cx(sites, control, target) *
+           gate_u3(sites, target, -θ / 2, 0, -(ϕ + λ) / 2) *
+           gate_cx(sites, control, target) *
+           gate_u3(sites, target, θ / 2, ϕ, 0)
 end
 
 # I don't recognize these gates...
@@ -183,41 +205,41 @@ end
 
 function arity(gatename::AbstractString)
     arities = Dict(
-                   "id" =>  1,
-                   "u1" =>  1,
-                   "u2" =>  1,
-                   "u3" =>  1,
-                   "u" =>   1,
-                   "cx" =>  2,
-                   "x" =>   1,
-                   "y" =>   1,
-                   "z" =>   1,
-                   "s" =>   1,
-                   "sdg" =>  1,
-                   "h" =>  1,
-                   "t" =>  1,
-                   "tdg" =>  1,
-                   "ccx" =>  3,
-                   "c3x" =>  4,
-                   "c4x" =>  5,
-                   "rx" =>  1,
-                   "ry" =>  1,
-                   "rz" =>  1,
-                   "cy" =>  2,
-                   "cz" =>  2,
-                   "ch" =>  2,
-                   "swap" =>  2,
-                   "cswap" =>  3,
-                   "crx" =>  2,
-                   "cry" =>  2,
-                   "crz" =>  2,
-                   "cu1" =>  2,
-                   "cu3" =>  2,
-                   "c3sqrtx" =>  missing,
-                   "rxx" =>  missing,
-                   "rzz" =>  missing,
-                   "rccx" =>  missing,
-                   "rc3x" =>  missing,
-                  )
+        "id" => 1,
+        "u1" => 1,
+        "u2" => 1,
+        "u3" => 1,
+        "u" => 1,
+        "cx" => 2,
+        "x" => 1,
+        "y" => 1,
+        "z" => 1,
+        "s" => 1,
+        "sdg" => 1,
+        "h" => 1,
+        "t" => 1,
+        "tdg" => 1,
+        "ccx" => 3,
+        "c3x" => 4,
+        "c4x" => 5,
+        "rx" => 1,
+        "ry" => 1,
+        "rz" => 1,
+        "cy" => 2,
+        "cz" => 2,
+        "ch" => 2,
+        "swap" => 2,
+        "cswap" => 3,
+        "crx" => 2,
+        "cry" => 2,
+        "crz" => 2,
+        "cu1" => 2,
+        "cu3" => 2,
+        "c3sqrtx" => missing,
+        "rxx" => missing,
+        "rzz" => missing,
+        "rccx" => missing,
+        "rc3x" => missing,
+    )
     return arities[gatename]
 end
