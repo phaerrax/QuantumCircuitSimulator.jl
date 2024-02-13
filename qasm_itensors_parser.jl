@@ -1,8 +1,14 @@
 using ITensors
 
+"""
+    splitlines(code::AbstractString)
+
+Split code at semicolons, producing a list whose elements are single lines of code.
+"""
 function splitlines(str)
-    # Split code lines at semicolons
-    return strip.(split(str, ";"))
+    lines = split(str, ";")  # Split at semicolons
+    lines = strip.(lines)  # Remove trailing and leading whitespace (such as stray '\n's)
+    return filter(!isempty, lines)  # Remove empty lines
 end
 
 function stripcomments(str)
