@@ -216,15 +216,23 @@ From OpenQASMexer
 ]
  =#
 
-function circuit(code)
-    n_sites = n_qbits(code)
-    lines = stripcomments(code)
-    lines = splitlines(lines)
+"""
+    gates(code::AbstractString)
 
-    # Remove preprocessor line
-    filter!(s -> !occursin("OPENQASM 2.0", s), lines)
-    filter!(s -> !occursin("include", s), lines)
+Return a pair `(s, ops)` where `s` is a list of ITensor "Qubit" indices, one for each qbit
+declared in the given code, and `ops` is a list of ITensor operators, representing each
+gate, one by one, as in the given code.
+"""
+function gates(code::AbstractString)
+    lines = splitlines(stripcomments(code))
+    removepreprocessor!(lines)
 
-    circuit = OpSum(n)
-    return lines
+    s = qbit_sites(code)
+
+    gates = interpret.(Ref(s), Ref(qbit_map(code)), lines)
+    filter!(!isnothing, gates)  # Remove lines unrecognized by `interpret`
+    # Since `interpret` may return `nothing`, the `gates` list is actually a
+    # Vector{Union{Nothing, ITensor}} object (`filter!` does not change the type).
+
+    return s, convert(Vector{ITensor}, gates)
 end
