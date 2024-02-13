@@ -110,6 +110,8 @@ function interpret(sites::Vector{<:Index}, sitemap, line::AbstractString)
         @error "reset instruction not (yet) implemented"
     elseif tokens["command"] == "measure"
         @error "measure instruction not (yet) implemented"
+    elseif tokens["command"] == "barrier"
+        @error "barrier instruction not (yet) implemented"
     elseif tokens["command"] == "qreg"
         # do nothing; we should already have dealt with registers before
     elseif tokens["command"] == "creg"
