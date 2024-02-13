@@ -6,8 +6,9 @@ function splitlines(str)
 end
 
 function stripcomments(str)
-    # Remove comments (aka everything between a '//' and a newline
-    return replace(str, r"//.*\n" => "")
+    # Remove comments, i.e. everything between a '//' and a newline
+    # (Strings are immutable, so we can't use `replace!` here)
+    return replace(str, r"//[^\n]*" => "")
 end
 
 """
