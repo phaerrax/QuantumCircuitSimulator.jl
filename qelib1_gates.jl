@@ -15,7 +15,7 @@ function ITensors.op(::OpName"U", ::SiteType"Qubit"; θ::Real, ϕ::Real, λ::Rea
     #     ⎝ ℯ^{i(ϕ−λ)/2} sin(θ/2)    ℯ^{i(ϕ+λ)/2} cos(θ/2)   ⎠
     return [
         cis(-(ϕ + λ) / 2)*cos(θ / 2) -cis(-(ϕ - λ) / 2)*sin(θ / 2)
-        cis((ϕ - λ) / 2)*sin(θ / 2) cis((ϕ + λ) / 2)*sin(θ / 2)
+        cis((ϕ - λ) / 2)*sin(θ / 2) cis((ϕ + λ) / 2)*cos(θ / 2)
     ]
 end
 
