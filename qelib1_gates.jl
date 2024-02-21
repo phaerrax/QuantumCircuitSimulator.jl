@@ -195,37 +195,68 @@ function gate_crz(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
     #   )
 end
 
+function ITensors.op(::OpName"CU3", st::SiteType"Qubit"; θ::Real, ϕ::Real, λ::Real)
+    u = ITensors.op(OpName("U"), st; θ=θ, ϕ=ϕ, λ=λ)
+    proj0 = op(OpName("Proj0"), st)
+    proj1 = op(OpName("Proj1"), st)
+    id = op(OpName("id"), st)
+    return kron(proj0, id) + kron(proj1, u)
+end
+
+function ITensors.op(::OpName"CU", st::SiteType"Qubit"; θ::Real, ϕ::Real, λ::Real)
+    return ITensors.op(OpName("CU3"), st; θ=θ, ϕ=ϕ, λ=λ)
+end
+
+function ITensors.op(::OpName"CU1", st::SiteType"Qubit"; λ::Real)
+    return ITensors.op(OpName("CU3"), st; θ=0, ϕ=0, λ=λ)
+end
+
 function gate_cu1(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
-    return apply(
-        gate_u1(sites, control, λ / 2),
-        apply(
-            gate_cx(sites, target, control),
-            apply(
-                gate_u1(sites, target, -λ / 2),
-                apply(
-                    gate_cx(sites, target, control),
-                    gate_u1(sites, target, λ / 2)),
-            ),
-        ),
-    )
+    return ITensors.op("CU1", sites, control, target; λ=λ)
+    # This is the cu1 gate implementation as defined in the qelib1.inc file:
+    #
+    #   apply(
+    #       gate_u1(sites, control, λ / 2),
+    #       apply(
+    #           gate_cx(sites, target, control),
+    #           apply(
+    #               gate_u1(sites, target, -λ / 2),
+    #               apply(
+    #                   gate_cx(sites, target, control),
+    #                   gate_u1(sites, target, λ / 2)),
+    #           ),
+    #       ),
+    #   )
+    #
+    # It gives |0⟩⟨0| ⊗ I₂ + |1⟩⟨1| ⊗ U₁(λ) when
+    #
+    #           ⎛ 1     0    ⎞
+    #   U₁(λ) = ⎜            ⎟
+    #           ⎝ 0  ℯ^(i λ) ⎠
+    #
+    # as in the OpenQASM 3.0 specs.
 end
 
 function gate_cu3(
     sites::Vector{<:Index}, control::Int, target::Int, θ::Real, ϕ::Real, λ::Real
 )
-    # Implements a controlled U(theta,phi,lambda) gate.
-    return apply(
-        gate_u1(sites, target, (λ - ϕ) / 2),
-        apply(
-            gate_cx(sites, control, target),
-            apply(
-                gate_u3(sites, target, -θ / 2, 0, -(ϕ + λ) / 2),
-                apply(
-                    gate_cx(sites, control, target),
-                    gate_u3(sites, target, θ / 2, ϕ, 0)),
-            ),
-        ),
-    )
+    return ITensors.op("CU3", sites, control, target; θ=θ, ϕ=ϕ, λ=λ)
+    # This is the cu3 gate implementation as defined in the qelib1.inc file:
+    # FIXME: it seems like this doesn't return |0⟩⟨0| ⊗ I₂ + |1⟩⟨1| ⊗ U₃(θ,ϕ,λ)...
+    #
+    #   apply(
+    #       gate_u3(sites, target, θ / 2, ϕ, 0),
+    #       apply(
+    #           gate_cx(sites, control, target),
+    #           apply(
+    #               gate_u3(sites, target, -θ / 2, 0, -(ϕ + λ) / 2),
+    #               apply(
+    #                   gate_cx(sites, control, target),
+    #                   gate_u1(sites, target, (λ - ϕ) / 2) * gate_u1(sites, control, (λ + ϕ) / 2),
+    #               ),
+    #           ),
+    #       ),
+    #   )
 end
 
 # I don't recognize these gates...
