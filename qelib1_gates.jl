@@ -6,6 +6,12 @@
 
 using ITensors
 
+ITensors.op(::OpName"Id", ::SiteType"Qubit") = [
+    1 0
+    0 1
+]
+ITensors.op(::OpName"id", st::SiteType"Qubit") = ITensors.op(OpName("Id"), st)
+
 """
     u_relphase(θ::Real, ϕ::Real, λ::Real)
 
@@ -68,11 +74,6 @@ function ITensors.op(::OpName"CH", st::SiteType"Qubit")
     h = op(OpName("H"), st)
     return kron(proj0, id) + kron(proj1, h)
 end
-
-ITensors.op(::OpName"id", ::SiteType"Qubit") = [
-    1 0
-    0 1
-]
 
 function gate_id(sites::Vector{<:Index}, n::Int)
     return ITensors.op("id", sites, n)
