@@ -39,15 +39,34 @@ function ITensors.op(::OpName"U", st::SiteType"Qubit"; θ::Real, ϕ::Real, λ::R
 end
 
 function ITensors.op(::OpName"CCCCNOT", st::SiteType"Qubit")
+    proj0 = op(OpName("Proj0"), st)
+    proj1 = op(OpName("Proj1"), st)
     id = op(OpName("id"), st)
     not = op(OpName("X"), st)
-    return kron(id, id, id, id, not)
+    return kron(proj0, proj0, proj0, proj0, id) +
+           kron(proj0, proj0, proj0, proj1, id) +
+           kron(proj0, proj0, proj1, proj0, id) +
+           kron(proj0, proj0, proj1, proj1, id) +
+           kron(proj0, proj1, proj0, proj0, id) +
+           kron(proj0, proj1, proj0, proj1, id) +
+           kron(proj0, proj1, proj1, proj0, id) +
+           kron(proj0, proj1, proj1, proj1, id) +
+           kron(proj1, proj0, proj0, proj0, id) +
+           kron(proj1, proj0, proj0, proj1, id) +
+           kron(proj1, proj0, proj1, proj0, id) +
+           kron(proj1, proj0, proj1, proj1, id) +
+           kron(proj1, proj1, proj0, proj0, id) +
+           kron(proj1, proj1, proj0, proj1, id) +
+           kron(proj1, proj1, proj1, proj0, id) +
+           kron(proj1, proj1, proj1, proj1, not)
 end
 
 function ITensors.op(::OpName"CH", st::SiteType"Qubit")
+    proj0 = op(OpName("Proj0"), st)
+    proj1 = op(OpName("Proj1"), st)
     id = op(OpName("id"), st)
     h = op(OpName("H"), st)
-    return kron(id, h)
+    return kron(proj0, id) + kron(proj1, h)
 end
 
 ITensors.op(::OpName"id", ::SiteType"Qubit") = [
