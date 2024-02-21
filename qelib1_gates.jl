@@ -173,32 +173,51 @@ function gate_cry(sites::Vector{<:Index}, control::Int, target::Int, θ::Number)
 end
 
 function gate_crz(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
-    #return ITensors.op("CRz", sites, control, target; θ=λ)
-    # ITensors already provides a `CRz` gate, but we follow the implementation in
-    # the qelib1.inc file anyway.
-    return gate_u1(sites, target, λ / 2) *
-           gate_cx(sites, control, target) *
-           gate_u1(sites, target, -λ / 2) *
-           gate_cx(sites, control, target)
+    return ITensors.op("CRz", sites, control, target; θ=λ)
+    # This is the CRz gate implementation as defined in the qelib1.inc file.
+    # It gives an identical result:
+    #   return apply(
+    #       gate_u1(sites, target, λ / 2),
+    #       apply(
+    #           gate_cx(sites, control, target),
+    #           apply(
+    #               gate_u1(sites, target, -λ / 2),
+    #               gate_cx(sites, control, target)),
+    #       ),
+    #   )
 end
 
 function gate_cu1(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
-    return gate_u1(sites, control, λ / 2) *
-           gate_cx(sites, target, control) *
-           gate_u1(sites, target, -λ / 2) *
-           gate_cx(sites, target, control) *
-           gate_u1(sites, target, λ / 2)
+    return apply(
+        gate_u1(sites, control, λ / 2),
+        apply(
+            gate_cx(sites, target, control),
+            apply(
+                gate_u1(sites, target, -λ / 2),
+                apply(
+                    gate_cx(sites, target, control),
+                    gate_u1(sites, target, λ / 2)),
+            ),
+        ),
+    )
 end
 
 function gate_cu3(
     sites::Vector{<:Index}, control::Int, target::Int, θ::Real, ϕ::Real, λ::Real
 )
     # Implements a controlled U(theta,phi,lambda) gate.
-    return gate_u1(sites, target, (λ - ϕ) / 2) *
-           gate_cx(sites, control, target) *
-           gate_u3(sites, target, -θ / 2, 0, -(ϕ + λ) / 2) *
-           gate_cx(sites, control, target) *
-           gate_u3(sites, target, θ / 2, ϕ, 0)
+    return apply(
+        gate_u1(sites, target, (λ - ϕ) / 2),
+        apply(
+            gate_cx(sites, control, target),
+            apply(
+                gate_u3(sites, target, -θ / 2, 0, -(ϕ + λ) / 2),
+                apply(
+                    gate_cx(sites, control, target),
+                    gate_u3(sites, target, θ / 2, ϕ, 0)),
+            ),
+        ),
+    )
 end
 
 # I don't recognize these gates...
