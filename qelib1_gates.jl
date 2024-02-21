@@ -92,11 +92,18 @@ function gate_z(sites::Vector{<:Index}, n::Int)
 end
 
 function gate_s(sites::Vector{<:Index}, n::Int)
-    return gate_u1(sites, n; λ=pi / 2)
+    return ITensors.op("S", sites, n)
 end
 
 function gate_sdg(sites::Vector{<:Index}, n::Int)  # Adjoint of "S"
-    return gate_u1(sites, n; λ=-pi / 2)
+    # S = Phase(-π/2), where
+    #
+    #             ⎛ 1       0      ⎞
+    # Phase(ϕ) =  ⎜                ⎟
+    #             ⎝ 0  exp(im * ϕ) ⎠
+    #
+    # so S* = Phase(π/2)* = Phase(-π/2)
+    return ITensors.op("Phase", sites, n; ϕ=-pi / 2)
 end
 
 function gate_h(sites::Vector{<:Index}, n::Int)
@@ -104,11 +111,12 @@ function gate_h(sites::Vector{<:Index}, n::Int)
 end
 
 function gate_t(sites::Vector{<:Index}, n::Int)
-    return gate_u1(sites, n; λ=pi / 4)
+    return ITensors.op("T", sites, n)
 end
 
-function gate_tdg(sites::Vector{<:Index}, n::Int)
-    return gate_u1(sites, n; λ=-pi / 4)
+function gate_tdg(sites::Vector{<:Index}, n::Int)  # Adjoint of "T"
+    # T = Phase(π/4), so T* = Phase(π/4)* = Phase(-π/4)
+    return ITensors.op("Phase", sites, n; ϕ=-pi / 4)
 end
 
 function gate_ccx(sites::Vector{<:Index}, control1::Int, control2::Int, target::Int)
