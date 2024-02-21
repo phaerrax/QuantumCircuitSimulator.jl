@@ -1,22 +1,41 @@
-# OpenQASM --> ITensor gate map
+# OpenQASM 2 --> ITensor gate map
 # -----------------------------
 # 
-# The gate set is taken from the Quantum Experience standard header
+# The gate set is taken from the Quantum Experience standard header, and adheres to the
+# OpenQASM 2 specification.
+
 using ITensors
 
-# We need some operators that ITensors does not define.
-function ITensors.op(::OpName"U", ::SiteType"Qubit"; θ::Real, ϕ::Real, λ::Real)
-    # Return a generic single-qbit SU(2) gate, as defined in arXiv:1707.03429v2.
+"""
+    u_relphase(θ::Real, ϕ::Real, λ::Real)
+
+Different libraries define the three-parameter SU(2) gate differently, i.e. up to a
+phase. This function returns the phase ``ℯ^(i f(θ, ϕ, λ))`` by which ITensors' `Rn` operator
+and OpenQASM 2's `u` gate differ, that is such that
+```math
+u(θ, ϕ, λ) = u_relphase(θ, ϕ, λ) * Rn(θ, ϕ, λ)
+```
+"""
+function u_relphase(θ::Real, ϕ::Real, λ::Real)
+    return exp(-im / 2 * (ϕ + λ))
+end
+
+"""
+    ITensors.op(::OpName"U", ::SiteType"Qubit"; θ::Real, ϕ::Real, λ::Real)
+
+Return a generic single-qbit SU(2) gate, as defined in arXiv:1707.03429v2.
+"""
+function ITensors.op(::OpName"U", st::SiteType"Qubit"; θ::Real, ϕ::Real, λ::Real)
     #
     # U (θ, ϕ, λ) := Rz(ϕ) Ry(θ) Rz(λ) =
     #
     #     ⎛ ℯ^{−i(ϕ+λ)/2} cos(θ/2)   −ℯ^{−i(ϕ−λ)/2} sin(θ/2) ⎞
     #   = ⎜                                                  ⎟
     #     ⎝ ℯ^{i(ϕ−λ)/2} sin(θ/2)    ℯ^{i(ϕ+λ)/2} cos(θ/2)   ⎠
-    return [
-        cis(-(ϕ + λ) / 2)*cos(θ / 2) -cis(-(ϕ - λ) / 2)*sin(θ / 2)
-        cis((ϕ - λ) / 2)*sin(θ / 2) cis((ϕ + λ) / 2)*cos(θ / 2)
-    ]
+    #
+    # Actually this gate is implemented by ITensors, albeit with a different phase.
+    # We make this explicit by using the `u_relphase` function above.
+    return u_relphase(θ, ϕ, λ) * ITensors.op(OpName("Rn"), st; θ=θ, ϕ=ϕ, λ=λ)
 end
 
 function ITensors.op(::OpName"CCCCNOT", st::SiteType"Qubit")
