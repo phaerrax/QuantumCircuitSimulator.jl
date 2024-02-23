@@ -208,6 +208,10 @@ function adjointmap_itensor(on::OpName, s1::Index, s_tail::Index...; kwargs...)
     return ITensors.itensor(opmat, prime.(rs)..., dag.(rs)...)
 end
 
+function adjointmap_itensor(x::AbstractString, s1::Index, s_tail::Index...; kwargs...)
+    return adjointmap_itensor(OpName(x), s1, s_tail...; kwargs...)
+end
+
 """
     adjointmap_itensor(on::OpName, sites::Vector{<:Index}, n::Int...; kwargs...)
 
@@ -221,6 +225,10 @@ function adjointmap_itensor(on::OpName, sites::Vector{<:Index}, n::Int...; kwarg
     return adjointmap_itensor(on, s1, s_tail...; kwargs...)
 end
 
+function adjointmap_itensor(x::AbstractString, sites::Vector{<:Index}, n::Int...; kwargs...)
+    return adjointmap_itensor(OpName(x), sites, n...; kwargs...)
+end
+
 """
     adjointmap_itensor(sites::Vector{<:Index}, on::OpName, n::Int...; kwargs...)
 
@@ -231,4 +239,8 @@ Additional parameters needed to specify the operator may be passed as keyword ar
 """
 function adjointmap_itensor(sites::Vector{<:Index}, on::OpName, n::Int...; kwargs...)
     return adjointmap_itensor(on, sites, n...; kwargs...)
+end
+
+function adjointmap_itensor(sites::Vector{<:Index}, x::AbstractString, n::Int...; kwargs...)
+    return adjointmap_itensor(sites, OpName(x), n...; kwargs...)
 end
