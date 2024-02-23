@@ -1,24 +1,44 @@
-using ITensors, PseudomodesTTEDOPA
+using ITensors, PseudomodesTTEDOPA, LinearAlgebra
 
 """
     ITensors.space(st::SiteType"vQubit"; dim = 2)
 
 Create the Hilbert space for a site of type "vQubit", i.e. a vectorised
-qbit, where the vectorisation is performed wrt the generalised
-Gell-Mann basis of `Mat(ℂ²)`, composed of Hermitian traceless matrices
-together with the identity matrix.
+qbit, where the vectorisation is performed wrt the Pauli transfer matrix
+basis of `Mat(ℂ²)`, composed of the identity matrix and the three Pauli matrices.
 """
 ITensors.space(::SiteType"vQubit") = 4
+
+# "Pauli transfer matrix" basis
+# -----------------------------
+function ptmbasis(n_qbits::Int)
+    st = SiteType("Qubit")
+    σ =
+        (1 / sqrt(2)) .*
+        [Matrix(I, 2, 2), ITensors.op("X", st), ITensors.op("Y", st), ITensors.op("Z", st)]
+
+    if n_qbits == 1
+        return σ  # and don't bother with the rest
+    else
+        # σxn = Base.product(s, s, s... [n times])
+        σxn = Base.product(repeat([σ], n_qbits)...)
+        # Each element of σxn is a list (s_1, s_2, ..., s_n) where s_i is a Pauli matrix.
+        # We transform each of them in the tensor product s_1 ⊗ s_2 ⊗ ... ⊗ s_n.
+        return [kron(s...) for s in σxn]
+    end
+end
 
 # Shorthand notation:
 function vstate(sn::StateName, ::SiteType"vQubit")
     v = ITensors.state(sn, SiteType("Qubit"))
-    return PseudomodesTTEDOPA.vec(kron(v, v'), gellmannbasis(2))
+    return PseudomodesTTEDOPA.vec(kron(v, v'), ptmbasis(1))
 end
 function vop(sn::StateName, ::SiteType"vQubit")
     sn = statenamestring(sn)
     on = sn[1] == 'v' ? sn[2:end] : sn
-    return PseudomodesTTEDOPA.vec(PseudomodesTTEDOPA.try_op(OpName(on), SiteType("Qubit")), gellmannbasis(2))
+    return PseudomodesTTEDOPA.vec(
+        PseudomodesTTEDOPA.try_op(OpName(on), SiteType("Qubit")), ptmbasis(1)
+    )
 end
 
 # States (actual ones)
@@ -29,10 +49,10 @@ ITensors.state(sn::StateName"1", st::SiteType"vQubit") = vstate(sn, st)
 # Operator dispatch
 # =================
 function premultiply(mat, ::SiteType"vQubit")
-    return PseudomodesTTEDOPA.vec(x -> mat * x, gellmannbasis(2))
+    return PseudomodesTTEDOPA.vec(x -> mat * x, ptmbasis(1))
 end
 function postmultiply(mat, ::SiteType"vQubit")
-    return PseudomodesTTEDOPA.vec(x -> x * mat, gellmannbasis(2))
+    return PseudomodesTTEDOPA.vec(x -> x * mat, ptmbasis(1))
 end
 
 # The goal here is to define operators "A⋅" and "⋅A" in an automatic way whenever the
@@ -125,7 +145,9 @@ Tuple{Tuple{String, Any}, Int} items. The new signature should maybe then be
     gkslcommutator_itensor(::Vector{<:Index}, ::Tuple{Tuple{String, Any},Int}...).
 =#
 
-function gkslcommutator_itensor(sites::Vector{<:Index}, items::Tuple{Tuple{String, Any},Int}...)
+function gkslcommutator_itensor(
+    sites::Vector{<:Index}, items::Tuple{Tuple{String,Any},Int}...
+)
     # Unpacking the arguments:
     # - separate operator names/args and site numbers
     operators = first.(items)
@@ -167,8 +189,8 @@ function adjointmapmatrix(X::OpName; kwargs...)
     op = ITensors.op(X, SiteType("Qubit"); kwargs...)
     # This is some square matrix. We can deduce the dimension, hence the number of qbits
     # on which X acts, from it.
-    d = size(op, 1)
-    return PseudomodesTTEDOPA.vec(a -> op * a * op', gellmannbasis(d))
+    n_qbits = Int(log2(size(op, 1)))
+    return PseudomodesTTEDOPA.vec(a -> op * a * op', ptmbasis(n_qbits))
 end
 
 """
