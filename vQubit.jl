@@ -24,7 +24,7 @@ function ptmbasis(n_qbits::Int)
         σxn = Base.product(repeat([σ], n_qbits)...)
         # Each element of σxn is a list (s_1, s_2, ..., s_n) where s_i is a Pauli matrix.
         # We transform each of them in the tensor product s_1 ⊗ s_2 ⊗ ... ⊗ s_n.
-        return [kron(s...) for s in σxn]
+        return Base.vec([kron(s...) for s in σxn])
     end
 end
 
