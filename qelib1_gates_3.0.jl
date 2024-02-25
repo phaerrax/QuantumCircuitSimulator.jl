@@ -4,13 +4,7 @@
 # The gate set is taken from the Quantum Experience standard header, and adheres to the
 # OpenQASM 3.0 specification.
 
-using ITensors
-
-ITensors.op(::OpName"Id", ::SiteType"Qubit") = [
-    1 0
-    0 1
-]
-ITensors.op(::OpName"id", st::SiteType"Qubit") = ITensors.op(OpName("Id"), st)
+include("vQubit.jl")
 
 """
     u_relphase(θ::Real, ϕ::Real, λ::Real)
@@ -42,45 +36,6 @@ function ITensors.op(::OpName"U", st::SiteType"Qubit"; θ::Real, ϕ::Real, λ::R
     # Actually this gate is implemented by ITensors, albeit with a different phase.
     # We make this explicit by using the `u_relphase` function above.
     return u_relphase(θ, ϕ, λ) * ITensors.op(OpName("Rn"), st; θ=θ, ϕ=ϕ, λ=λ)
-end
-
-function ITensors.op(::OpName"CCCCNOT", st::SiteType"Qubit")
-    proj0 = op(OpName("Proj0"), st)
-    proj1 = op(OpName("Proj1"), st)
-    id = op(OpName("id"), st)
-    not = op(OpName("X"), st)
-    return kron(proj0, proj0, proj0, proj0, id) +
-           kron(proj0, proj0, proj0, proj1, id) +
-           kron(proj0, proj0, proj1, proj0, id) +
-           kron(proj0, proj0, proj1, proj1, id) +
-           kron(proj0, proj1, proj0, proj0, id) +
-           kron(proj0, proj1, proj0, proj1, id) +
-           kron(proj0, proj1, proj1, proj0, id) +
-           kron(proj0, proj1, proj1, proj1, id) +
-           kron(proj1, proj0, proj0, proj0, id) +
-           kron(proj1, proj0, proj0, proj1, id) +
-           kron(proj1, proj0, proj1, proj0, id) +
-           kron(proj1, proj0, proj1, proj1, id) +
-           kron(proj1, proj1, proj0, proj0, id) +
-           kron(proj1, proj1, proj0, proj1, id) +
-           kron(proj1, proj1, proj1, proj0, id) +
-           kron(proj1, proj1, proj1, proj1, not)
-end
-
-function ITensors.op(::OpName"CH", st::SiteType"Qubit")
-    proj0 = op(OpName("Proj0"), st)
-    proj1 = op(OpName("Proj1"), st)
-    id = op(OpName("id"), st)
-    h = op(OpName("H"), st)
-    return kron(proj0, id) + kron(proj1, h)
-end
-
-function ITensors.op(::OpName"CPhase", st::SiteType"Qubit"; ϕ::Real)
-    proj0 = op(OpName("Proj0"), st)
-    proj1 = op(OpName("Proj1"), st)
-    id = op(OpName("Id"), st)
-    phase = op(OpName("Phase"), st; ϕ=ϕ)
-    return kron(proj0, id) + kron(proj1, phase)
 end
 
 function gate_id(sites::Vector{<:Index}, n::Int)
@@ -231,22 +186,6 @@ function gate_crz(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
     #   )
 end
 
-function ITensors.op(::OpName"CU3", st::SiteType"Qubit"; θ::Real, ϕ::Real, λ::Real)
-    u = ITensors.op(OpName("U"), st; θ=θ, ϕ=ϕ, λ=λ)
-    proj0 = op(OpName("Proj0"), st)
-    proj1 = op(OpName("Proj1"), st)
-    id = op(OpName("id"), st)
-    return kron(proj0, id) + kron(proj1, u)
-end
-
-function ITensors.op(::OpName"CU", st::SiteType"Qubit"; θ::Real, ϕ::Real, λ::Real)
-    return ITensors.op(OpName("CU3"), st; θ=θ, ϕ=ϕ, λ=λ)
-end
-
-function ITensors.op(::OpName"CU1", st::SiteType"Qubit"; λ::Real)
-    return ITensors.op(OpName("CU3"), st; θ=0, ϕ=0, λ=λ)
-end
-
 function gate_cu1(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
     return ITensors.op("CU1", sites, control, target; λ=λ)
     # This is the cu1 gate implementation as defined in the qelib1.inc file:
@@ -315,46 +254,3 @@ end
 #function gate_rc3x(sites::Vector{<:Index}, n::Int)
 #    return ITensors.op("", sites, n)
 #end
-
-function arity(gatename::AbstractString)
-    arities = Dict(
-        "id" => 1,
-        "u1" => 1,
-        "u2" => 1,
-        "u3" => 1,
-        "u" => 1,
-        "cx" => 2,
-        "x" => 1,
-        "y" => 1,
-        "z" => 1,
-        "s" => 1,
-        "p" => 1,
-        "cp" => 2,
-        "sdg" => 1,
-        "h" => 1,
-        "t" => 1,
-        "tdg" => 1,
-        "ccx" => 3,
-        "c3x" => 4,
-        "c4x" => 5,
-        "rx" => 1,
-        "ry" => 1,
-        "rz" => 1,
-        "cy" => 2,
-        "cz" => 2,
-        "ch" => 2,
-        "swap" => 2,
-        "cswap" => 3,
-        "crx" => 2,
-        "cry" => 2,
-        "crz" => 2,
-        "cu1" => 2,
-        "cu3" => 2,
-        "c3sqrtx" => missing,
-        "rxx" => missing,
-        "rzz" => missing,
-        "rccx" => missing,
-        "rc3x" => missing,
-    )
-    return arities[gatename]
-end

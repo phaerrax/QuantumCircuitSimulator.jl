@@ -236,3 +236,46 @@ function gates(code::AbstractString)
 
     return s, convert(Vector{ITensor}, gates)
 end
+
+function arity(gatename::AbstractString)
+    arities = Dict(
+        "id" => 1,
+        "u1" => 1,
+        "u2" => 1,
+        "u3" => 1,
+        "u" => 1,
+        "cx" => 2,
+        "x" => 1,
+        "y" => 1,
+        "z" => 1,
+        "s" => 1,
+        "p" => 1,
+        "cp" => 2,
+        "sdg" => 1,
+        "h" => 1,
+        "t" => 1,
+        "tdg" => 1,
+        "ccx" => 3,
+        "c3x" => 4,
+        "c4x" => 5,
+        "rx" => 1,
+        "ry" => 1,
+        "rz" => 1,
+        "cy" => 2,
+        "cz" => 2,
+        "ch" => 2,
+        "swap" => 2,
+        "cswap" => 3,
+        "crx" => 2,
+        "cry" => 2,
+        "crz" => 2,
+        "cu1" => 2,
+        "cu3" => 2,
+        "c3sqrtx" => missing,
+        "rxx" => missing,
+        "rzz" => missing,
+        "rccx" => missing,
+        "rc3x" => missing,
+    )
+    return arities[gatename]
+end
