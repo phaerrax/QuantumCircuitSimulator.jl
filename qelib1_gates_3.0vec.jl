@@ -45,6 +45,14 @@ function gate_z(sites::Vector{<:Index}, n::Int)
     return adjointmap_itensor("Z", sites, n)
 end
 
+function gate_p(sites::Vector{<:Index}, n::Int, ϕ::Real)
+    return adjointmap_itensor("Phase", sites, n; ϕ=ϕ)
+end
+
+function gate_cp(sites::Vector{<:Index}, control::Int, target::Int, ϕ::Real)
+    return adjointmap_itensor("CPhase", sites, control, target; ϕ=ϕ)
+end
+
 function gate_s(sites::Vector{<:Index}, n::Int)
     return adjointmap_itensor("S", sites, n)
 end

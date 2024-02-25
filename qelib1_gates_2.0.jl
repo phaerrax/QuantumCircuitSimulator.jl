@@ -74,6 +74,14 @@ function ITensors.op(::OpName"CH", st::SiteType"Qubit")
     return kron(proj0, id) + kron(proj1, h)
 end
 
+function ITensors.op(::OpName"CPhase", st::SiteType"Qubit"; ϕ::Real)
+    proj0 = op(OpName("Proj0"), st)
+    proj1 = op(OpName("Proj1"), st)
+    id = op(OpName("Id"), st)
+    phase = op(OpName("Phase"), st; ϕ=ϕ)
+    return kron(proj0, id) + kron(proj1, phase)
+end
+
 function gate_id(sites::Vector{<:Index}, n::Int)
     return ITensors.op("id", sites, n)
 end
@@ -108,6 +116,14 @@ end
 
 function gate_z(sites::Vector{<:Index}, n::Int)
     return ITensors.op("Z", sites, n)
+end
+
+function gate_p(sites::Vector{<:Index}, n::Int; ϕ::Real)
+    return ITensors.op("Phase", sites, n; ϕ=ϕ)
+end
+
+function gate_cp(sites::Vector{<:Index}, control::Int, target::Int; ϕ::Real)
+    return ITensors.op("CPhase", sites, control, target; ϕ=ϕ)
 end
 
 function gate_s(sites::Vector{<:Index}, n::Int)
@@ -310,6 +326,8 @@ function arity(gatename::AbstractString)
         "x" => 1,
         "y" => 1,
         "z" => 1,
+        "p" => 1,
+        "cp" => 2,
         "s" => 1,
         "sdg" => 1,
         "h" => 1,
