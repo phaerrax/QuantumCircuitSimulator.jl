@@ -54,7 +54,7 @@ defined in the given code.
 """
 function qbit_sites(code::AbstractString)
     return [
-        [siteinds("Qubit", n; addtags=id) for (id, n) in zip(qbit_registers(code)...)]...;
+        [siteinds("vQubit", n; addtags=id) for (id, n) in zip(qbit_registers(code)...)]...;
     ]
 end
 
