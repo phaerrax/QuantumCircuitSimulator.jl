@@ -95,8 +95,8 @@ end
 # (Circuit barriers could come into play at this point...)
 
 # First, group the gates into layers.
-function gate_layers(code::AbstractString)
-    sites, gate_list = gates(code)
+function gate_layers(code::AbstractString, st::AbstractString)
+    sites, gate_list = gates(code, st)
 
     # We put the gates in a stack, so that we can pop them one at a time. We reverse the
     # order, so that the first gate in the list is also the first in the stack.
@@ -142,7 +142,7 @@ Keyword arguments are forwarded to the `apply` function, so that it is possible 
 the parameters for the contraction sequence (i.e. cutoff, maximum bond dimension).
 """
 function tem_mpo(code::AbstractString, noiseλ, noiseλλ; kwargs...)
-    sites, layers = gate_layers(code)
+    sites, layers = gate_layers(code, "vQubit")
     # Each layer is made of some ITensors, which do not necessarily cover the whole width
     # of the circuit, so we call our `fullMPO` instead of the standard MPO constructor.
     layer_mpos = [fullMPO(sites, layer) for layer in layers]

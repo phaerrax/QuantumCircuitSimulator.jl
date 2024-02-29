@@ -47,14 +47,14 @@ function qbit_registers(code::AbstractString)
 end
 
 """
-    qbit_sites(code::AbstractString)
+    qbit_sites(code::AbstractString, st::AbstractString)
 
-Return the ITensor site Index vector associated to the quantum registers
+Return the ITensor site indices, of SiteType `st`, associated to the quantum registers
 defined in the given code.
 """
-function qbit_sites(code::AbstractString)
+function qbit_sites(code::AbstractString, st::AbstractString)
     return [
-        [siteinds("vQubit", n; addtags=id) for (id, n) in zip(qbit_registers(code)...)]...;
+        [siteinds(st, n; addtags=id) for (id, n) in zip(qbit_registers(code)...)]...;
     ]
 end
 
@@ -217,17 +217,17 @@ From OpenQASMexer
  =#
 
 """
-    gates(code::AbstractString)
+    gates(code::AbstractString, st::AbstractString)
 
-Return a pair `(s, ops)` where `s` is a list of ITensor "Qubit" indices, one for each qbit
-declared in the given code, and `ops` is a list of ITensor operators, representing each
-gate, one by one, as in the given code.
+Return a pair `(s, ops)` where `s` is a list of ITensor indices of SiteType `st`, one for
+each qbit declared in the given code, and `ops` is a list of ITensor operators,
+representing each gate, one by one, as in the given code.
 """
-function gates(code::AbstractString)
+function gates(code::AbstractString, st::AbstractString)
     lines = splitlines(stripcomments(code))
     removepreprocessor!(lines)
 
-    s = qbit_sites(code)
+    s = qbit_sites(code, st)
 
     gates = interpret.(Ref(s), Ref(qbit_map(code)), lines)
     filter!(!isnothing, gates)  # Remove lines unrecognized by `interpret`
