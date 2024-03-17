@@ -4,7 +4,7 @@
 # The gate set is taken from the Quantum Experience standard header, and adheres to the
 # OpenQASM 2.0 specification.
 
-include("vQubit.jl")
+using LindbladVectorizedTensors
 
 """
     u_relphase(θ::Real, ϕ::Real, λ::Real)
