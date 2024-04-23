@@ -4,19 +4,17 @@
 # The gate set is taken from the Quantum Experience standard header, and adheres to the
 # OpenQASM 2.0 specification.
 
-using LindbladVectorizedTensors
-
 """
-    u_relphase(θ::Real, ϕ::Real, λ::Real)
+    u_relphase_openqasm2(θ::Real, ϕ::Real, λ::Real)
 
 Different libraries define the three-parameter SU(2) gate differently, i.e. up to a
 phase. This function returns the phase ``ℯ^(i f(θ, ϕ, λ))`` by which ITensors' `Rn` operator
-and OpenQASM 3.0's `u` gate differ, that is such that
+and OpenQASM 2.0's `u` gate differ, that is such that
 ```math
-u(θ, ϕ, λ) = u_relphase(θ, ϕ, λ) * Rn(θ, ϕ, λ)
+u(θ, ϕ, λ) = u_relphase_openqasm2(θ, ϕ, λ) * Rn(θ, ϕ, λ)
 ```
 """
-function u_relphase(θ::Real, ϕ::Real, λ::Real)
+function u_relphase_openqasm2(θ::Real, ϕ::Real, λ::Real)
     return exp(-im / 2 * θ)
 end
 
@@ -34,7 +32,7 @@ function ITensors.op(::OpName"U", st::SiteType"Qubit"; θ::Real, ϕ::Real, λ::R
     #
     # This gate is already implemented by ITensors, albeit with a different phase.
     # We make this explicit by using the `u_relphase` function above.
-    return u_relphase(θ, ϕ, λ) * ITensors.op(OpName("Rn"), st; θ=θ, ϕ=ϕ, λ=λ)
+    return u_relphase_openqasm2(θ, ϕ, λ) * ITensors.op(OpName("Rn"), st; θ=θ, ϕ=ϕ, λ=λ)
 end
 
 function gate_id(sites::Vector{<:Index}, n::Int)

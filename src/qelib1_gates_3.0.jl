@@ -1,22 +1,20 @@
-# OpenQASM 3.0 --> ITensor gate map (with vectorized operators)
-# -------------------------------------------------------------
+# OpenQASM 3.0 --> ITensor gate map
+# ---------------------------------
 # 
 # The gate set is taken from the Quantum Experience standard header, and adheres to the
 # OpenQASM 3.0 specification.
 
-using LindbladVectorizedTensors
-
 """
-    u_relphase(θ::Real, ϕ::Real, λ::Real)
+    u_relphase_openqasm3(θ::Real, ϕ::Real, λ::Real)
 
 Different libraries define the three-parameter SU(2) gate differently, i.e. up to a
 phase. This function returns the phase ``ℯ^(i f(θ, ϕ, λ))`` by which ITensors' `Rn` operator
 and OpenQASM 2.0's `u` gate differ, that is such that
 ```math
-u(θ, ϕ, λ) = u_relphase(θ, ϕ, λ) * Rn(θ, ϕ, λ)
+u(θ, ϕ, λ) = u_relphase_openqasm3(θ, ϕ, λ) * Rn(θ, ϕ, λ)
 ```
 """
-function u_relphase(θ::Real, ϕ::Real, λ::Real)
+function u_relphase_openqasm3(θ::Real, ϕ::Real, λ::Real)
     return exp(-im / 2 * (ϕ + λ))
 end
 
@@ -35,23 +33,23 @@ function ITensors.op(::OpName"U", st::SiteType"Qubit"; θ::Real, ϕ::Real, λ::R
     #
     # Actually this gate is implemented by ITensors, albeit with a different phase.
     # We make this explicit by using the `u_relphase` function above.
-    return u_relphase(θ, ϕ, λ) * ITensors.op(OpName("Rn"), st; θ=θ, ϕ=ϕ, λ=λ)
+    return u_relphase_openqasm3(θ, ϕ, λ) * ITensors.op(OpName("Rn"), st; θ=θ, ϕ=ϕ, λ=λ)
 end
 
 function gate_id(sites::Vector{<:Index}, n::Int)
-    return ITensors.op("Id", sites, n)
+    return ITensors.op("id", sites, n)
 end
 
 function gate_u1(sites::Vector{<:Index}, n::Int, λ::Real)
-    return adjointmap_itensor("U", sites, n; θ=0, ϕ=0, λ=λ)
+    return ITensors.op("U", sites, n; θ=0, ϕ=0, λ=λ)
 end
 
 function gate_u2(sites::Vector{<:Index}, n::Int, ϕ::Real, λ::Real)
-    return adjointmap_itensor("U", sites, n; θ=pi / 2, ϕ=ϕ, λ=λ)
+    return ITensors.op("U", sites, n; θ=pi / 2, ϕ=ϕ, λ=λ)
 end
 
 function gate_u3(sites::Vector{<:Index}, n::Int, θ::Real, ϕ::Real, λ::Real)
-    return adjointmap_itensor("U", sites, n; θ=θ, ϕ=ϕ, λ=λ)
+    return ITensors.op("U", sites, n; θ=θ, ϕ=ϕ, λ=λ)
 end
 
 function gate_u(sites::Vector{<:Index}, n::Int, θ::Real, ϕ::Real, λ::Real)
@@ -59,31 +57,31 @@ function gate_u(sites::Vector{<:Index}, n::Int, θ::Real, ϕ::Real, λ::Real)
 end
 
 function gate_cx(sites::Vector{<:Index}, control::Int, target::Int)
-    return adjointmap_itensor("CX", sites, control, target)
+    return ITensors.op("CX", sites, control, target)
 end
 
 function gate_x(sites::Vector{<:Index}, n::Int)
-    return adjointmap_itensor("X", sites, n)
+    return ITensors.op("X", sites, n)
 end
 
 function gate_y(sites::Vector{<:Index}, n::Int)
-    return adjointmap_itensor("Y", sites, n)
+    return ITensors.op("Y", sites, n)
 end
 
 function gate_z(sites::Vector{<:Index}, n::Int)
-    return adjointmap_itensor("Z", sites, n)
+    return ITensors.op("Z", sites, n)
 end
 
-function gate_p(sites::Vector{<:Index}, n::Int, ϕ::Real)
-    return adjointmap_itensor("Phase", sites, n; ϕ=ϕ)
+function gate_p(sites::Vector{<:Index}, n::Int; ϕ::Real)
+    return ITensors.op("Phase", sites, n; ϕ=ϕ)
 end
 
-function gate_cp(sites::Vector{<:Index}, control::Int, target::Int, ϕ::Real)
-    return adjointmap_itensor("CPhase", sites, control, target; ϕ=ϕ)
+function gate_cp(sites::Vector{<:Index}, control::Int, target::Int; ϕ::Real)
+    return ITensors.op("CPhase", sites, control, target; ϕ=ϕ)
 end
 
 function gate_s(sites::Vector{<:Index}, n::Int)
-    return adjointmap_itensor("S", sites, n)
+    return ITensors.op("S", sites, n)
 end
 
 function gate_sdg(sites::Vector{<:Index}, n::Int)  # Adjoint of "S"
@@ -94,30 +92,30 @@ function gate_sdg(sites::Vector{<:Index}, n::Int)  # Adjoint of "S"
     #             ⎝ 0  exp(im * ϕ) ⎠
     #
     # so S* = Phase(π/2)* = Phase(-π/2)
-    return adjointmap_itensor("Phase", sites, n; ϕ=-pi / 2)
+    return ITensors.op("Phase", sites, n; ϕ=-pi / 2)
 end
 
 function gate_h(sites::Vector{<:Index}, n::Int)
-    return adjointmap_itensor("H", sites, n)
+    return ITensors.op("H", sites, n)
 end
 
 function gate_t(sites::Vector{<:Index}, n::Int)
-    return adjointmap_itensor("T", sites, n)
+    return ITensors.op("T", sites, n)
 end
 
 function gate_tdg(sites::Vector{<:Index}, n::Int)  # Adjoint of "T"
     # T = Phase(π/4), so T* = Phase(π/4)* = Phase(-π/4)
-    return adjointmap_itensor("Phase", sites, n; ϕ=-pi / 4)
+    return ITensors.op("Phase", sites, n; ϕ=-pi / 4)
 end
 
 function gate_ccx(sites::Vector{<:Index}, control1::Int, control2::Int, target::Int)
-    return adjointmap_itensor("Toffoli", sites, control1, control2, target)
+    return ITensors.op("Toffoli", sites, control1, control2, target)
 end
 
 function gate_c3x(
     sites::Vector{<:Index}, control1::Int, control2::Int, control3::Int, target::Int
 )  # CCCNOT
-    return adjointmap_itensor("CCCNOT", sites, control1, control2, control3, target)
+    return ITensors.op("CCCNOT", sites, control1, control2, control3, target)
 end
 
 function gate_c4x(
@@ -128,53 +126,51 @@ function gate_c4x(
     control4::Int,
     target::Int,
 )  # CCCCNOT
-    return adjointmap_itensor(
-        "CCCCNOT", sites, control1, control2, control3, control4, target
-    )
+    return ITensors.op("CCCCNOT", sites, control1, control2, control3, control4, target)
 end
 
 function gate_rx(sites::Vector{<:Index}, n::Int, θ::Number)
-    return adjointmap_itensor("Rx", sites, n; θ=θ)
+    return ITensors.op("Rx", sites, n; θ=θ)
 end
 
 function gate_ry(sites::Vector{<:Index}, n::Int, θ::Number)
-    return adjointmap_itensor("Ry", sites, n; θ=θ)
+    return ITensors.op("Ry", sites, n; θ=θ)
 end
 
 function gate_rz(sites::Vector{<:Index}, n::Int, θ::Number)
-    return adjointmap_itensor("Rz", sites, n; θ=θ)
+    return ITensors.op("Rz", sites, n; θ=θ)
 end
 
 function gate_cy(sites::Vector{<:Index}, control::Int, target::Int)
-    return adjointmap_itensor("CY", sites, control, target)
+    return ITensors.op("CY", sites, control, target)
 end
 
 function gate_cz(sites::Vector{<:Index}, control::Int, target::Int)
-    return adjointmap_itensor("CZ", sites, control, target)
+    return ITensors.op("CZ", sites, control, target)
 end
 
 function gate_ch(sites::Vector{<:Index}, control::Int, target::Int)
-    return adjointmap_itensor("CH", sites, control, target)
+    return ITensors.op("CH", sites, control, target)
 end
 
 function gate_swap(sites::Vector{<:Index}, n1::Int, n2::Int)
-    return adjointmap_itensor("Swap", sites, n1, n2)
+    return ITensors.op("Swap", sites, n1, n2)
 end
 
 function gate_cswap(sites::Vector{<:Index}, control::Int, target1::Int, target2::Int)
-    return adjointmap_itensor("CSwap", sites, control, target1, target2)
+    return ITensors.op("CSwap", sites, control, target1, target2)
 end
 
 function gate_crx(sites::Vector{<:Index}, control::Int, target::Int, θ::Number)
-    return adjointmap_itensor("CRx", sites, control, target; θ=θ)
+    return ITensors.op("CRx", sites, control, target; θ=θ)
 end
 
 function gate_cry(sites::Vector{<:Index}, control::Int, target::Int, θ::Number)
-    return adjointmap_itensor("CRy", sites, control, target; θ=θ)
+    return ITensors.op("CRy", sites, control, target; θ=θ)
 end
 
 function gate_crz(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
-    return adjointmap_itensor("CRz", sites, control, target; θ=λ)
+    return ITensors.op("CRz", sites, control, target; θ=λ)
     # This is the CRz gate implementation as defined in the qelib1.inc file.
     # It gives an identical result:
     #   return apply(
@@ -189,7 +185,7 @@ function gate_crz(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
 end
 
 function gate_cu1(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
-    return adjointmap_itensor("CU1", sites, control, target; λ=λ)
+    return ITensors.op("CU1", sites, control, target; λ=λ)
     # This is the cu1 gate implementation as defined in the qelib1.inc file:
     #
     #   apply(
@@ -205,7 +201,7 @@ function gate_cu1(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
     #       ),
     #   )
     #
-    # It gives |0⟩⟨0| ⊗ I₂ + |1⟩⟨1| ⊗ U₁(λ) where
+    # It gives |0⟩⟨0| ⊗ I₂ + |1⟩⟨1| ⊗ U₁(λ) when
     #
     #           ⎛ 1     0    ⎞
     #   U₁(λ) = ⎜            ⎟
@@ -217,7 +213,7 @@ end
 function gate_cu3(
     sites::Vector{<:Index}, control::Int, target::Int, θ::Real, ϕ::Real, λ::Real
 )
-    return adjointmap_itensor("CU3", sites, control, target; θ=θ, ϕ=ϕ, λ=λ)
+    return ITensors.op("CU3", sites, control, target; θ=θ, ϕ=ϕ, λ=λ)
     # This is the cu3 gate implementation as defined in the qelib1.inc file:
     # FIXME: it seems like this doesn't return |0⟩⟨0| ⊗ I₂ + |1⟩⟨1| ⊗ U₃(θ,ϕ,λ)...
     #
