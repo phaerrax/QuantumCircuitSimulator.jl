@@ -145,30 +145,40 @@ function interpret(sites::Vector{<:Index}, sitemap, line::AbstractString)
             args = []
         else
             args = eval(Meta.parse(gate_tokens[2]))
+            # This will be a string contaning the parameters of the gate (angles, etc.)
         end
-        gate_fn = "gate_" * gate_tokens["name"]
+        gatename = gate_tokens["name"]
         # This is name of the function associated to the gate, as in qelib1_gates.jl
 
         qbit_list = strip.(split(tokens["qbits"], ","))
-        qbit_siteinds = [sitemap[n] for n in qbit_list]
+        qbit_inds = [sitemap[n] for n in qbit_list]
+        qbit_siteinds = [sites[n] for n in qbit_inds]
+        # `qbit_inds` contains the indices, of the `sites` list, that we need to consider.
+        # `qbit_siteinds` contains the actual Index objects within `sites`.
 
         # Check that the arity of the gate is equal to the number or given qbits
-        n_qbits = length(qbit_siteinds)
-        gate_arity = arity(replace(gate_fn, "gate_" => ""))
+        n_qbits = length(qbit_inds)
+        gate_arity = arity(gatename)
         if (n_qbits != gate_arity)
             @error "Number of qbits ($n_qbits) ≠ arity of the gate ($gate_arity)"
         end
 
         if !isempty(args)
-            @info "Trying to call $gate_fn with site indices $(join(qbit_siteinds, ", ")) " *
+            @info "Trying to call gate $gatename with site indices $(join(qbit_siteinds, ", ")) " *
                 "and additional arguments $(join(args, ", "))"
         else
-            @info "Trying to call $gate_fn with site indices $(join(qbit_siteinds, ", ")) " *
+            @info "Trying to call gate $gatename with site indices $(join(qbit_siteinds, ", ")) " *
                 "and no arguments"
         end
-        # This will be a string contaning the parameters of the gate (angles, etc.)
-        return getfield(Main, Symbol(gate_fn))(sites, qbit_siteinds..., args...)
-        # Finally, call the function given by `gate_fn` with all the needed arguments
+
+        # Get site type from `sites`
+        commontags_s = ITensors.commontags(sites...)
+        common_stypes = ITensors._sitetypes(commontags_s)
+
+        for st in common_stypes
+            g = gate(GateName(gatename), st, qbit_siteinds..., args...)
+            !isnothing(g) && return g
+        end
     end
     return nothing
 end

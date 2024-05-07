@@ -4,6 +4,10 @@
 # The gate set is taken from the Quantum Experience standard header, and adheres to the
 # OpenQASM 3.0 specification.
 
+# Define new gates as:
+#   gate(::GateName, ::SiteType, ::Index...; kwargs...) -> ITensor
+#   gate(::GateName, ::SiteType; kwargs...) -> Julia matrix
+
 """
     u_relphase_openqasm3(θ::Real, ϕ::Real, λ::Real)
 
@@ -18,73 +22,69 @@ function u_relphase_openqasm3(θ::Real, ϕ::Real, λ::Real)
     return exp(-im / 2 * (ϕ + λ))
 end
 
-"""
-    ITensors.op(::OpName"U", ::SiteType"Qubit"; θ::Real, ϕ::Real, λ::Real)
-
-Return a generic single-qbit SU(2) gate, as defined in arXiv:1707.03429v2.
-"""
 function ITensors.op(::OpName"U", st::SiteType"Qubit"; θ::Real, ϕ::Real, λ::Real)
+    # This is a new operator for the "Qubit" site type.
+    # It returns a generic single-qbit SU(2) gate, as defined in arXiv:1707.03429v2.
     #
     # U(θ, ϕ, λ) := Rz(ϕ) Ry(θ) Rz(λ) =
     #
-    #     ⎛ e^(−i(ϕ+λ)/2) cos(θ/2)   −e^(−i(ϕ−λ)/2) sin(θ/2) ⎞
-    #   = ⎜                                                  ⎟
+    # =   ⎛ e^(−i(ϕ+λ)/2) cos(θ/2)   −e^(−i(ϕ−λ)/2) sin(θ/2) ⎞
     #     ⎝ e^(i(ϕ−λ)/2) sin(θ/2)     e^(i(ϕ+λ)/2) cos(θ/2)  ⎠
     #
-    # Actually this gate is implemented by ITensors, albeit with a different phase.
+    # This gate is implemented by ITensors, albeit with a different phase.
     # We make this explicit by using the `u_relphase` function above.
     return u_relphase_openqasm3(θ, ϕ, λ) * ITensors.op(OpName("Rn"), st; θ=θ, ϕ=ϕ, λ=λ)
 end
 
-function gate_id(sites::Vector{<:Index}, n::Int)
-    return ITensors.op("id", sites, n)
+function gate(::GateName"id", ::SiteType"Qubit", s::Index)
+    return ITensors.op("Id", s)
 end
 
-function gate_u1(sites::Vector{<:Index}, n::Int, λ::Real)
-    return ITensors.op("U", sites, n; θ=0, ϕ=0, λ=λ)
+function gate(::GateName"u1", ::SiteType"Qubit", s::Index, λ::Real)
+    return ITensors.op("U", s; θ=0, ϕ=0, λ=λ)
 end
 
-function gate_u2(sites::Vector{<:Index}, n::Int, ϕ::Real, λ::Real)
-    return ITensors.op("U", sites, n; θ=pi / 2, ϕ=ϕ, λ=λ)
+function gate(::GateName"u2", ::SiteType"Qubit", s::Index, ϕ::Real, λ::Real)
+    return ITensors.op("U", s; θ=pi / 2, ϕ=ϕ, λ=λ)
 end
 
-function gate_u3(sites::Vector{<:Index}, n::Int, θ::Real, ϕ::Real, λ::Real)
-    return ITensors.op("U", sites, n; θ=θ, ϕ=ϕ, λ=λ)
+function gate(::GateName"u3", ::SiteType"Qubit", s::Index, θ::Real, ϕ::Real, λ::Real)
+    return ITensors.op("U", s; θ=θ, ϕ=ϕ, λ=λ)
 end
 
-function gate_u(sites::Vector{<:Index}, n::Int, θ::Real, ϕ::Real, λ::Real)
-    return gate_u3(sites, n, θ, ϕ, λ)
+function gate(::GateName"u", ::SiteType"Qubit", s::Index, θ::Real, ϕ::Real, λ::Real)
+    return gate_u3(s, θ, ϕ, λ)
 end
 
-function gate_cx(sites::Vector{<:Index}, control::Int, target::Int)
-    return ITensors.op("CX", sites, control, target)
+function gate(::GateName"cx", ::SiteType"Qubit", control::Index, target::Index)
+    return ITensors.op("CX", control, target)
 end
 
-function gate_x(sites::Vector{<:Index}, n::Int)
-    return ITensors.op("X", sites, n)
+function gate(::GateName"x", ::SiteType"Qubit", s::Index)
+    return ITensors.op("X", s)
 end
 
-function gate_y(sites::Vector{<:Index}, n::Int)
-    return ITensors.op("Y", sites, n)
+function gate(::GateName"y", ::SiteType"Qubit", s::Index)
+    return ITensors.op("Y", s)
 end
 
-function gate_z(sites::Vector{<:Index}, n::Int)
-    return ITensors.op("Z", sites, n)
+function gate(::GateName"z", ::SiteType"Qubit", s::Index)
+    return ITensors.op("Z", s)
 end
 
-function gate_p(sites::Vector{<:Index}, n::Int; ϕ::Real)
-    return ITensors.op("Phase", sites, n; ϕ=ϕ)
+function gate(::GateName"p", ::SiteType"Qubit", s::Index, ϕ::Real)
+    return ITensors.op("Phase", s; ϕ=ϕ)
 end
 
-function gate_cp(sites::Vector{<:Index}, control::Int, target::Int; ϕ::Real)
-    return ITensors.op("CPhase", sites, control, target; ϕ=ϕ)
+function gate(::GateName"cp", ::SiteType"Qubit", control::Index, target::Index, ϕ::Real)
+    return ITensors.op("CPhase", control, target; ϕ=ϕ)
 end
 
-function gate_s(sites::Vector{<:Index}, n::Int)
-    return ITensors.op("S", sites, n)
+function gate(::GateName"s", ::SiteType"Qubit", s::Index)
+    return ITensors.op("S", s)
 end
 
-function gate_sdg(sites::Vector{<:Index}, n::Int)  # Adjoint of "S"
+function gate(::GateName"sdg", ::SiteType"Qubit", s::Index)  # Adjoint of "S"
     # S = Phase(-π/2), where
     #
     #             ⎛ 1       0      ⎞
@@ -92,104 +92,114 @@ function gate_sdg(sites::Vector{<:Index}, n::Int)  # Adjoint of "S"
     #             ⎝ 0  exp(im * ϕ) ⎠
     #
     # so S* = Phase(π/2)* = Phase(-π/2)
-    return ITensors.op("Phase", sites, n; ϕ=-pi / 2)
+    return ITensors.op("Phase", s; ϕ=-pi / 2)
 end
 
-function gate_h(sites::Vector{<:Index}, n::Int)
-    return ITensors.op("H", sites, n)
+function gate(::GateName"h", ::SiteType"Qubit", s::Index)
+    return ITensors.op("H", s)
 end
 
-function gate_t(sites::Vector{<:Index}, n::Int)
-    return ITensors.op("T", sites, n)
+function gate(::GateName"t", ::SiteType"Qubit", s::Index)
+    return ITensors.op("T", s)
 end
 
-function gate_tdg(sites::Vector{<:Index}, n::Int)  # Adjoint of "T"
+function gate(::GateName"tdg", ::SiteType"Qubit", s::Index)  # Adjoint of "T"
     # T = Phase(π/4), so T* = Phase(π/4)* = Phase(-π/4)
-    return ITensors.op("Phase", sites, n; ϕ=-pi / 4)
+    return ITensors.op("Phase", s; ϕ=-pi / 4)
 end
 
-function gate_ccx(sites::Vector{<:Index}, control1::Int, control2::Int, target::Int)
-    return ITensors.op("Toffoli", sites, control1, control2, target)
+function gate(
+    ::GateName"ccx", ::SiteType"Qubit", control1::Index, control2::Index, target::Index
+)
+    return ITensors.op("Toffoli", control1, control2, target)
 end
 
-function gate_c3x(
-    sites::Vector{<:Index}, control1::Int, control2::Int, control3::Int, target::Int
-)  # CCCNOT
-    return ITensors.op("CCCNOT", sites, control1, control2, control3, target)
+function gate(
+    ::GateName"c3x",
+    ::SiteType"Qubit",
+    control1::Index,
+    control2::Index,
+    control3::Index,
+    target::Index,
+)
+    return ITensors.op("CCCNOT", control1, control2, control3, target)
 end
 
-function gate_c4x(
-    sites::Vector{<:Index},
-    control1::Int,
-    control2::Int,
-    control3::Int,
-    control4::Int,
-    target::Int,
-)  # CCCCNOT
-    return ITensors.op("CCCCNOT", sites, control1, control2, control3, control4, target)
+function gate(
+    ::GateName"c4x",
+    ::SiteType"Qubit",
+    control1::Index,
+    control2::Index,
+    control3::Index,
+    control4::Index,
+    target::Index,
+)
+    return ITensors.op("CCCCNOT", control1, control2, control3, control4, target)
 end
 
-function gate_rx(sites::Vector{<:Index}, n::Int, θ::Number)
-    return ITensors.op("Rx", sites, n; θ=θ)
+function gate(::GateName"rx", ::SiteType"Qubit", s::Index, θ::Real)
+    return ITensors.op("Rx", s; θ=θ)
 end
 
-function gate_ry(sites::Vector{<:Index}, n::Int, θ::Number)
-    return ITensors.op("Ry", sites, n; θ=θ)
+function gate(::GateName"ry", ::SiteType"Qubit", s::Index, θ::Real)
+    return ITensors.op("Ry", s; θ=θ)
 end
 
-function gate_rz(sites::Vector{<:Index}, n::Int, θ::Number)
-    return ITensors.op("Rz", sites, n; θ=θ)
+function gate(::GateName"rz", ::SiteType"Qubit", s::Index, θ::Real)
+    return ITensors.op("Rz", s; θ=θ)
 end
 
-function gate_cy(sites::Vector{<:Index}, control::Int, target::Int)
-    return ITensors.op("CY", sites, control, target)
+function gate(::GateName"cy", ::SiteType"Qubit", control::Index, target::Index)
+    return ITensors.op("CY", control, target)
 end
 
-function gate_cz(sites::Vector{<:Index}, control::Int, target::Int)
-    return ITensors.op("CZ", sites, control, target)
+function gate(::GateName"cz", ::SiteType"Qubit", control::Index, target::Index)
+    return ITensors.op("CZ", control, target)
 end
 
-function gate_ch(sites::Vector{<:Index}, control::Int, target::Int)
-    return ITensors.op("CH", sites, control, target)
+function gate(::GateName"ch", ::SiteType"Qubit", control::Index, target::Index)
+    return ITensors.op("CH", control, target)
 end
 
-function gate_swap(sites::Vector{<:Index}, n1::Int, n2::Int)
-    return ITensors.op("Swap", sites, n1, n2)
+function gate(::GateName"swap", ::SiteType"Qubit", s1::Index, s2::Index)
+    return ITensors.op("Swap", s1, s2)
 end
 
-function gate_cswap(sites::Vector{<:Index}, control::Int, target1::Int, target2::Int)
-    return ITensors.op("CSwap", sites, control, target1, target2)
+function gate(
+    ::GateName"cswap", ::SiteType"Qubit", control::Index, target1::Index, target2::Index
+)
+    return ITensors.op("CSwap", control, target1, target2)
 end
 
-function gate_crx(sites::Vector{<:Index}, control::Int, target::Int, θ::Number)
-    return ITensors.op("CRx", sites, control, target; θ=θ)
+function gate(::GateName"crx", ::SiteType"Qubit", control::Index, target::Index, θ::Real)
+    return ITensors.op("CRx", control, target; θ=θ)
 end
 
-function gate_cry(sites::Vector{<:Index}, control::Int, target::Int, θ::Number)
-    return ITensors.op("CRy", sites, control, target; θ=θ)
+function gate(::GateName"cry", ::SiteType"Qubit", control::Index, target::Index, θ::Real)
+    return ITensors.op("CRy", control, target; θ=θ)
 end
 
-function gate_crz(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
-    return ITensors.op("CRz", sites, control, target; θ=λ)
+function gate(::GateName"crz", ::SiteType"Qubit", control::Index, target::Index, λ::Real)
+    return ITensors.op("CRz", control, target; θ=λ)
     # This is the CRz gate implementation as defined in the qelib1.inc file.
     # It gives an identical result:
     #   return apply(
     #       gate_u1(sites, target, λ / 2),
     #       apply(
-    #           gate_cx(sites, control, target),
+    #           gate_cx(control, target),
     #           apply(
     #               gate_u1(sites, target, -λ / 2),
-    #               gate_cx(sites, control, target)),
+    #               gate_cx(control, target)),
     #       ),
     #   )
 end
 
-function gate_cu1(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
-    return ITensors.op("CU1", sites, control, target; λ=λ)
+function gate(::GateName"cu1", ::SiteType"Qubit", control::Index, target::Index, λ::Real)
+    return ITensors.op("CU1", control, target; λ=λ)
     # This is the cu1 gate implementation as defined in the qelib1.inc file:
     #
     #   apply(
-    #       gate_u1(sites, control, λ / 2),
+    #       gate_u1(control, λ / 2),
     #       apply(
     #           gate_cx(sites, target, control),
     #           apply(
@@ -210,22 +220,28 @@ function gate_cu1(sites::Vector{<:Index}, control::Int, target::Int, λ::Number)
     # as in the OpenQASM 3.0 specs.
 end
 
-function gate_cu3(
-    sites::Vector{<:Index}, control::Int, target::Int, θ::Real, ϕ::Real, λ::Real
+function gate(
+    ::GateName"cu3",
+    ::SiteType"Qubit",
+    control::Index,
+    target::Index,
+    θ::Real,
+    ϕ::Real,
+    λ::Real,
 )
-    return ITensors.op("CU3", sites, control, target; θ=θ, ϕ=ϕ, λ=λ)
+    return ITensors.op("CU3", control, target; θ=θ, ϕ=ϕ, λ=λ)
     # This is the cu3 gate implementation as defined in the qelib1.inc file:
     # FIXME: it seems like this doesn't return |0⟩⟨0| ⊗ I₂ + |1⟩⟨1| ⊗ U₃(θ,ϕ,λ)...
     #
     #   apply(
-    #       gate_u3(sites, target, θ / 2, ϕ, 0),
+    #       gate_u3(target, θ / 2, ϕ, 0),
     #       apply(
-    #           gate_cx(sites, control, target),
+    #           gate_cx(control, target),
     #           apply(
-    #               gate_u3(sites, target, -θ / 2, 0, -(ϕ + λ) / 2),
+    #               gate_u3(target, -θ / 2, 0, -(ϕ + λ) / 2),
     #               apply(
-    #                   gate_cx(sites, control, target),
-    #                   gate_u1(sites, target, (λ - ϕ) / 2) * gate_u1(sites, control, (λ + ϕ) / 2),
+    #                   gate_cx(control, target),
+    #                   gate_u1(target, (λ - ϕ) / 2) * gate_u1(control, (λ + ϕ) / 2),
     #               ),
     #           ),
     #       ),
@@ -234,21 +250,21 @@ end
 
 # I don't recognize these gates...
 #
-#function gate_c3sqrtx(sites::Vector{<:Index}, n::Int)
-#    return ITensors.op("", sites, n)
+#function gate_c3sqrtx(s::Index)
+#    return ITensors.op("", s)
 #end
-#function gate_rxx(sites::Vector{<:Index}, n::Int)
-#    return ITensors.op("", sites, n)
-#end
-#
-#function gate_rzz(sites::Vector{<:Index}, n::Int)
-#    return ITensors.op("", sites, n)
+#function gate_rxx(s::Index)
+#    return ITensors.op("", s)
 #end
 #
-#function gate_rccx(sites::Vector{<:Index}, n::Int)
-#    return ITensors.op("", sites, n)
+#function gate_rzz(s::Index)
+#    return ITensors.op("", s)
 #end
 #
-#function gate_rc3x(sites::Vector{<:Index}, n::Int)
-#    return ITensors.op("", sites, n)
+#function gate_rccx(s::Index)
+#    return ITensors.op("", s)
+#end
+#
+#function gate_rc3x(s::Index)
+#    return ITensors.op("", s)
 #end
