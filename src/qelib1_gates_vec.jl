@@ -151,43 +151,10 @@ end
 
 function gate(::GateName"crz", ::SiteType"vQubit", control::Index, target::Index, λ::Number)
     return adjointmap_itensor("CRz", control, target; θ=λ)
-    # This is the CRz gate implementation as defined in the qelib1.inc file.
-    # It gives an identical result:
-    #   return apply(
-    #       gate(::GateName"u1", ::SiteType"vQubit", target, λ / 2),
-    #       apply(
-    #           gate(::GateName"cx", ::SiteType"vQubit", control, target),
-    #           apply(
-    #               gate(::GateName"u1", ::SiteType"vQubit", target, -λ / 2),
-    #               gate(::GateName"cx", ::SiteType"vQubit", control, target)),
-    #       ),
-    #   )
 end
 
 function gate(::GateName"cu1", ::SiteType"vQubit", control::Index, target::Index, λ::Number)
     return adjointmap_itensor("CU1", control, target; λ=λ)
-    # This is the cu1 gate implementation as defined in the qelib1.inc file:
-    #
-    #   apply(
-    #       gate(::GateName"u1", ::SiteType"vQubit", control, λ / 2),
-    #       apply(
-    #           gate(::GateName"cx", ::SiteType"vQubit", target, control),
-    #           apply(
-    #               gate(::GateName"u1", ::SiteType"vQubit", target, -λ / 2),
-    #               apply(
-    #                   gate(::GateName"cx", ::SiteType"vQubit", target, control),
-    #                   gate(::GateName"u1", ::SiteType"vQubit", target, λ / 2)),
-    #           ),
-    #       ),
-    #   )
-    #
-    # It gives |0⟩⟨0| ⊗ I₂ + |1⟩⟨1| ⊗ U₁(λ) where
-    #
-    #           ⎛ 1     0    ⎞
-    #   U₁(λ) = ⎜            ⎟
-    #           ⎝ 0  ℯ^(i λ) ⎠
-    #
-    # as in the OpenQASM 3.0 specs.
 end
 
 function gate(
@@ -200,27 +167,8 @@ function gate(
     λ::Real,
 )
     return adjointmap_itensor("CU3", control, target; θ=θ, ϕ=ϕ, λ=λ)
-    # This is the cu3 gate implementation as defined in the qelib1.inc file:
-    # FIXME: it seems like this doesn't return |0⟩⟨0| ⊗ I₂ + |1⟩⟨1| ⊗ U₃(θ,ϕ,λ)...
-    #
-    #   apply(
-    #       gate(::GateName"u3", ::SiteType"vQubit", target, θ / 2, ϕ, 0),
-    #       apply(
-    #           gate(::GateName"cx", ::SiteType"vQubit", control, target),
-    #           apply(
-    #               gate(::GateName"u3", ::SiteType"vQubit", target, -θ / 2, 0, -(ϕ + λ) / 2),
-    #               apply(
-    #                   gate(::GateName"cx", ::SiteType"vQubit", control, target),
-    #                   gate(::GateName"u1", ::SiteType"vQubit", target, (λ - ϕ) / 2) *
-    #                       gate(::GateName"u1", ::SiteType"vQubit", control, (λ + ϕ) / 2),
-    #               ),
-    #           ),
-    #       ),
-    #   )
 end
 
-# I don't recognize these gates...
-#
 #function gate(::GateName"c3sqrtx", ::SiteType"vQubit", s::Index)
 #    return ITensors.op("", s)
 #end

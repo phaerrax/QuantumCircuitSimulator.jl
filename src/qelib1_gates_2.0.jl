@@ -36,7 +36,7 @@ function ITensors.op(::OpName"U", st::SiteType"Qubit"; θ::Real, ϕ::Real, λ::R
 end
 
 function gate(::GateName"id", ::SiteType"Qubit", s::Index)
-    return ITensors.op("id", s)
+    return ITensors.op("Id", s)
 end
 
 function gate(::GateName"u1", ::SiteType"Qubit", s::Index, λ::Real)
