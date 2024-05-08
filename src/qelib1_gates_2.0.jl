@@ -136,15 +136,15 @@ function gate(
     return ITensors.op("CCCCNOT", control1, control2, control3, control4, target)
 end
 
-function gate(::GateName"rx", ::SiteType"Qubit", s::Index, θ::Number)
+function gate(::GateName"rx", ::SiteType"Qubit", s::Index, θ::Real)
     return ITensors.op("Rx", s; θ=θ)
 end
 
-function gate(::GateName"ry", ::SiteType"Qubit", s::Index, θ::Number)
+function gate(::GateName"ry", ::SiteType"Qubit", s::Index, θ::Real)
     return ITensors.op("Ry", s; θ=θ)
 end
 
-function gate(::GateName"rz", ::SiteType"Qubit", s::Index, θ::Number)
+function gate(::GateName"rz", ::SiteType"Qubit", s::Index, θ::Real)
     return ITensors.op("Rz", s; θ=θ)
 end
 
@@ -170,15 +170,15 @@ function gate(
     return ITensors.op("CSwap", control, target1, target2)
 end
 
-function gate(::GateName"crx", ::SiteType"Qubit", control::Index, target::Index, θ::Number)
+function gate(::GateName"crx", ::SiteType"Qubit", control::Index, target::Index, θ::Real)
     return ITensors.op("CRx", control, target; θ=θ)
 end
 
-function gate(::GateName"cry", ::SiteType"Qubit", control::Index, target::Index, θ::Number)
+function gate(::GateName"cry", ::SiteType"Qubit", control::Index, target::Index, θ::Real)
     return ITensors.op("CRy", control, target; θ=θ)
 end
 
-function gate(::GateName"crz", ::SiteType"Qubit", control::Index, target::Index, λ::Number)
+function gate(::GateName"crz", ::SiteType"Qubit", control::Index, target::Index, λ::Real)
     return ITensors.op("CRz", control, target; θ=λ)
     # This is the CRz gate implementation as defined in the qelib1.inc file.
     # It gives an identical result:
@@ -193,7 +193,7 @@ function gate(::GateName"crz", ::SiteType"Qubit", control::Index, target::Index,
     #   )
 end
 
-function gate(::GateName"cu1", ::SiteType"Qubit", control::Index, target::Index, λ::Number)
+function gate(::GateName"cu1", ::SiteType"Qubit", control::Index, target::Index, λ::Real)
     return ITensors.op("CU1", control, target; λ=λ)
     # This is the cu1 gate implementation as defined in the qelib1.inc file:
     #

@@ -107,15 +107,15 @@ function gate(
     return adjointmap_itensor("CCCCNOT", control1, control2, control3, control4, target)
 end
 
-function gate(::GateName"rx", ::SiteType"vQubit", s::Index, θ::Number)
+function gate(::GateName"rx", ::SiteType"vQubit", s::Index, θ::Real)
     return adjointmap_itensor("Rx", s; θ=θ)
 end
 
-function gate(::GateName"ry", ::SiteType"vQubit", s::Index, θ::Number)
+function gate(::GateName"ry", ::SiteType"vQubit", s::Index, θ::Real)
     return adjointmap_itensor("Ry", s; θ=θ)
 end
 
-function gate(::GateName"rz", ::SiteType"vQubit", s::Index, θ::Number)
+function gate(::GateName"rz", ::SiteType"vQubit", s::Index, θ::Real)
     return adjointmap_itensor("Rz", s; θ=θ)
 end
 
@@ -141,19 +141,19 @@ function gate(
     return adjointmap_itensor("CSwap", control, target1, target2)
 end
 
-function gate(::GateName"crx", ::SiteType"vQubit", control::Index, target::Index, θ::Number)
+function gate(::GateName"crx", ::SiteType"vQubit", control::Index, target::Index, θ::Real)
     return adjointmap_itensor("CRx", control, target; θ=θ)
 end
 
-function gate(::GateName"cry", ::SiteType"vQubit", control::Index, target::Index, θ::Number)
+function gate(::GateName"cry", ::SiteType"vQubit", control::Index, target::Index, θ::Real)
     return adjointmap_itensor("CRy", control, target; θ=θ)
 end
 
-function gate(::GateName"crz", ::SiteType"vQubit", control::Index, target::Index, λ::Number)
+function gate(::GateName"crz", ::SiteType"vQubit", control::Index, target::Index, λ::Real)
     return adjointmap_itensor("CRz", control, target; θ=λ)
 end
 
-function gate(::GateName"cu1", ::SiteType"vQubit", control::Index, target::Index, λ::Number)
+function gate(::GateName"cu1", ::SiteType"vQubit", control::Index, target::Index, λ::Real)
     return adjointmap_itensor("CU1", control, target; λ=λ)
 end
 
