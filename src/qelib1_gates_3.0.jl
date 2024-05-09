@@ -52,8 +52,8 @@ function gate(::GateName"u3", ::SiteType"Qubit", s::Index, θ::Real, ϕ::Real, �
     return ITensors.op("U", s; θ=θ, ϕ=ϕ, λ=λ)
 end
 
-function gate(::GateName"u", ::SiteType"Qubit", s::Index, θ::Real, ϕ::Real, λ::Real)
-    return gate_u3(s, θ, ϕ, λ)
+function gate(::GateName"u", st::SiteType"Qubit", s::Index, θ::Real, ϕ::Real, λ::Real)
+    return gate(GateName("u3"), st, s, θ, ϕ, λ)
 end
 
 function gate(::GateName"cx", ::SiteType"Qubit", control::Index, target::Index)
