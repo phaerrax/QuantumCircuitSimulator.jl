@@ -1,14 +1,15 @@
-# OpenQASM 3.0 --> ITensor gate map (with vectorized operators)
-# -------------------------------------------------------------
-# 
-# The gate set is taken from the Quantum Experience standard header, and adheres to the
-# OpenQASM 3.0 specification.
+# ITensor gate map (with vectorized operators)
+# --------------------------------------------
 
 using LindbladVectorizedTensors: adjointmap_itensor
 
 function gate(::GateName"id", ::SiteType"vQubit", s::Index)
     return ITensors.op("Id", s)
 end
+
+# The gate library file included in `src/TEM.jl` before this file will define the ITensors
+# operator `U` according to some specification. The following gates will reflect that
+# definition automatically.
 
 function gate(::GateName"u1", ::SiteType"vQubit", s::Index, λ::Real)
     return adjointmap_itensor("U", s; θ=0, ϕ=0, λ=λ)
