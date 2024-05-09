@@ -19,20 +19,20 @@ u(θ, ϕ, λ) = u_relphase_openqasm3(θ, ϕ, λ) * Rn(θ, ϕ, λ)
 ```
 """
 function u_relphase_openqasm3(θ::Real, ϕ::Real, λ::Real)
-    return exp(-im / 2 * (ϕ + λ))
+    return exp(im / 2 * θ)
 end
 
 function ITensors.op(::OpName"U", st::SiteType"Qubit"; θ::Real, ϕ::Real, λ::Real)
     # This is a new operator for the "Qubit" site type.
-    # It returns a generic single-qbit SU(2) gate, as defined in arXiv:1707.03429v2.
+    # It returns the generic single-qbit SU(2) gate, as defined in the OpenQASM 3.0
+    # specification (https://openqasm.com/language/gates.html#U).
     #
-    # U(θ, ϕ, λ) := Rz(ϕ) Ry(θ) Rz(λ) =
-    #
-    # =   ⎛ e^(−i(ϕ+λ)/2) cos(θ/2)   −e^(−i(ϕ−λ)/2) sin(θ/2) ⎞
-    #     ⎝ e^(i(ϕ−λ)/2) sin(θ/2)     e^(i(ϕ+λ)/2) cos(θ/2)  ⎠
+    #               1  ⎛     1+e^(iθ)        -ie^(iλ)(1-e^(iθ))  ⎞
+    # U(θ, ϕ, λ) := -  ⎜                                         ⎟
+    #               2  ⎝ ie^(iϕ)(1-e^(iθ))  e^(i(ϕ+λ))(1+e^(iθ)) ⎠
     #
     # This gate is implemented by ITensors, albeit with a different phase.
-    # We make this explicit by using the `u_relphase` function above.
+    # We make this explicit by using the `u_relphase...` function above.
     return u_relphase_openqasm3(θ, ϕ, λ) * ITensors.op(OpName("Rn"), st; θ=θ, ϕ=ϕ, λ=λ)
 end
 
