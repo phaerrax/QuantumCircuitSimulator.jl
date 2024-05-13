@@ -7,6 +7,9 @@ include("utils.jl")
 export gate, GateName
 include("gatename.jl")
 
+export PauliString, indices, operators, order
+include("paulistring.jl")
+
 #include("qelib1_gates_2.0.jl")
 #include("qelib1_gates_3.0.jl")
 include("qiskit_gates.jl")
