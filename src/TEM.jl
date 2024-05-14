@@ -1,6 +1,6 @@
 module TEM
 
-using ITensors, LindbladVectorizedTensors, JSON, OffsetArrays
+using ITensors, LindbladVectorizedTensors, JSON, OffsetArrays, LinearAlgebra
 
 include("utils.jl")
 
@@ -18,6 +18,7 @@ include("gates_vqbits.jl")
 export qbit_registers, qbit_sites, qbit_map, interpret, gates
 include("qasm_itensors_parser.jl")
 
+export noiselayer, inversenoiselayer
 include("spl_noise_model.jl")
 
 end
