@@ -1,13 +1,13 @@
 module TEM
 
-using ITensors, LindbladVectorizedTensors
+using ITensors, LindbladVectorizedTensors, JSON, OffsetArrays
 
 include("utils.jl")
 
 export gate, GateName
 include("gatename.jl")
 
-export PauliString, indices, operators, order
+export PauliString, indices, operators, order, SPLNoiseModel, nqbits
 include("paulistring.jl")
 
 #include("qelib1_gates_2.0.jl")

@@ -1,3 +1,52 @@
+struct SPLNoiseModel
+    parameters::Dict{PauliString,Real}
+    function SPLNoiseModel(dict::Dict{PauliString,<:Real})
+        # Check that all strings have the same length
+        samelength = allequal(length.(keys(dict)))
+        # and that their order is 1 or 2
+        correctorders = all(n -> (n == 1 || n == 2), [order(p.first) for p in dict])
+
+        if !samelength
+            error("Pauli strings don't have the same length")
+        elseif !correctorders
+            error("Some Pauli strings don't have order 1 or 2")
+        else
+            new(dict)
+        end
+    end
+end
+
+Base.isempty(model::SPLNoiseModel) = isempty(model.parameters)
+
+function nqbits(model::SPLNoiseModel)
+    return isempty(model) ? 0 : length(first(keys(model.parameters)))
+end
+
+function SPLNoiseModel(file::AbstractString)
+    dict = JSON.parsefile(file)
+    return SPLNoiseModel(Dict(PauliString(str) => coeff for (str, coeff) in dict))
+end
+
+function noise_ptm_coefficients(model::SPLNoiseModel)
+    N = nqbits(model)
+
+    vec = [zeros(Float64, 3) for _ in 1:N]
+    mat = [zeros(Float64, 3, 3) for _ in 1:(N - 1)]
+    for (k, v) in model.parameters
+        if order(k) == 1
+            vec[first(indices(k))][operators(k)...] = v
+        elseif order(k) == 2
+            mat[first(indices(k))][operators(k)...] = v
+        else
+            # This shouldn't happens since the inner constructor of SPLNoiseModel enforces
+            # this condition... but just in case...
+            error("Pauli string $k has order ≠ 1 or 2")
+        end
+    end
+
+    return noise_ptm_coefficients(vec, mat)
+end
+
 """
     noise_ptm_coefficients(ptm_generator_vec, ptm_generator_mat)
 
