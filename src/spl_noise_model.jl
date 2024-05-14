@@ -7,15 +7,19 @@ of ``N`` 3-element vectors and a set of ``N`` 3x3 matrices, where ``N`` represen
 number of qbits in the circuit.
 """
 function noise_ptm_coefficients(ptm_generator_vec, ptm_generator_mat)
-    if length(ptm_generator_vec) == size(ptm_generator_mat, 1) == size(ptm_generator_mat, 2)
-        n_qbits = length(ptm_generator_vec)
-        ptm_parameter_vec = [OffsetArray(ones(4), 0:3) for _ in 1:n_qbits]
-        ptm_parameter_mat = [OffsetArray(ones(4, 4), 0:3, 0:3) for _ in 1:n_qbits]
-        for m in 1:n_qbits
+    if length(ptm_generator_vec) == length(ptm_generator_mat) + 1
+        nqbits = length(ptm_generator_vec)
+        ptm_parameter_vec = [OffsetArray(ones(4), 0:3) for _ in 1:nqbits]
+        ptm_parameter_mat = [OffsetArray(ones(4, 4), 0:3, 0:3) for _ in 1:(nqbits - 1)]
+        for m in 1:nqbits
             for i in 1:3
                 ptm_parameter_vec[m][i] = exp(
                     -2 * sum([ptm_generator_vec[m][j] for j in 1:3 if j != i])
                 )
+            end
+        end
+        for m in 1:(nqbits - 1)
+            for i in 1:3
                 # sum(A, dims=1) --> sum along columns
                 # sum(A, dims=2) --> sum along rows
                 #
