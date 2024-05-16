@@ -1,5 +1,5 @@
 using TEM
-using ITensors
+using ITensors, LindbladVectorizedTensors
 using Conda, PyCall, Pkg
 using Test
 
@@ -13,4 +13,10 @@ include("replicateqiskit.jl")
     @test replicateqiskit(qiskitcircuit_noentanglement)
     @test replicateqiskit(qiskitcircuit_unitarygates)
     @test replicateqiskit(qiskitcircuit_registermapping)
+end
+
+include("noise_layer_preserves_trace.jl")
+
+@testset "Noise layer construction" begin
+    @test noise_layer_preserves_trace(; N=20)
 end
