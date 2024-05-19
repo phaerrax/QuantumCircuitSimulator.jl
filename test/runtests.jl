@@ -13,6 +13,7 @@ include("replicateqiskit.jl")
     @test replicateqiskit(qiskitcircuit_noentanglement)
     @test replicateqiskit(qiskitcircuit_unitarygates)
     @test replicateqiskit(qiskitcircuit_registermapping)
+    @test paulistringordering("XIYXIYZXII")
 end
 
 include("noise_layer_preserves_trace.jl")

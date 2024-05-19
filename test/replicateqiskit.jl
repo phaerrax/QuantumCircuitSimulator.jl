@@ -3,6 +3,7 @@ const qiskit = pyimport("qiskit")
 const qi = pyimport("qiskit.quantum_info")
 const aer = pyimport("qiskit_aer")
 const qasm2 = pyimport("qiskit.qasm2")
+const clib = pyimport("qiskit.circuit.library")
 
 function qiskitcircuit_noentanglement(output_qasmfile)
     qr = qiskit.QuantumRegister(2, "q")
@@ -84,4 +85,30 @@ function replicateqiskit(qiskitcircuit::Function)
     cbvec = TEM.qiskitvector(psi)
 
     return isapprox(cbvec, qiskitstate)
+end
+
+function paulistringordering(str::AbstractString)
+    pstr = PauliString(str)
+    N = length(pstr)
+
+    qr = qiskit.QuantumRegister(N, "q")
+    qc = qiskit.QuantumCircuit(qr)
+
+    # Load the Pauli string in a Qiskit operator, and apply to a zero initial state.
+    gate = clib.PauliGate(string(pstr))
+    qc.append(gate, 0:(N - 1))
+    finalstate_qiskit_pyobj = qi.Statevector.from_instruction(qc)
+    finalstate_qiskit = @. np.real(finalstate_qiskit_pyobj.data) +
+        im * np.imag(finalstate_qiskit_pyobj.data)
+
+    # Create an ITensors operator from it.
+    sites = siteinds("Qubit", N)
+    pstr_op = op(sites, pstr)
+
+    # Apply to a zero initial state.
+    initialstate = MPS(sites, "0")
+    finalstate_itensors = apply(pstr_op, initialstate)
+
+    # Check if the final state is the same as Qiskit's.
+    return isapprox(finalstate_qiskit, TEM.qiskitvector(finalstate_itensors))
 end
