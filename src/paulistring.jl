@@ -84,6 +84,7 @@ end
 Base.setindex!(p::PauliString, c::Char, i::Integer) = setindex!(p, pauli_chartoint(c), i)
 Base.isless(p::PauliString, q::PauliString) = isless(p.string, q.string)
 Base.isequal(p::PauliString, q::PauliString) = isequal(p.string, q.string)
+Base.reverse(p::PauliString) = PauliString(reverse(p.string))
 
 """
     indices(p::PauliString)
@@ -127,8 +128,10 @@ Return an ITensor corresponding the Pauli string operator.
 """
 function ITensors.op(sites::Vector{<:Index}, p::PauliString)
     length(p) != length(sites) && "Lengths of Pauli string and Index vector differ."
+    # Reverse the Pauli string to comply with Qiskit's convention
+    rp = reverse(p)
     x = ITensors.OneITensor()
-    for (s, i) in zip(string.(pauli_inttochar.(operators(p))), indices(p))
+    for (s, i) in zip(string.(pauli_inttochar.(operators(rp))), indices(rp))
         x *= op(sites, s, i)
     end
     return x
