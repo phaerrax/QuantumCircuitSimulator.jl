@@ -13,9 +13,13 @@ function qiskitcircuit_noentanglement(output_qasmfile)
     qc.y(qr[1])
 
     state = qi.Statevector.from_instruction(qc)
+    circuitmatrix = qi.Operator(qc)
+
     qasm2.dump(qc, output_qasmfile)
 
-    return np.real(state.data), np.imag(state.data)
+    return np.real(state.data),
+    np.imag(state.data), np.real(circuitmatrix.data),
+    np.imag(circuitmatrix.data)
 end
 
 function qiskitcircuit_unitarygates(output_qasmfile)
@@ -29,10 +33,13 @@ function qiskitcircuit_unitarygates(output_qasmfile)
     result = job.result()
     print(result.get_unitary(qc, 4))
     state = qi.Statevector.from_instruction(qc)
+    circuitmatrix = qi.Operator(qc)
 
     qasm2.dump(qc, output_qasmfile)
 
-    return np.real(state.data), np.imag(state.data)
+    return np.real(state.data),
+    np.imag(state.data), np.real(circuitmatrix.data),
+    np.imag(circuitmatrix.data)
 end
 
 function qiskitcircuit_registermapping(output_qasmfile)
@@ -60,17 +67,23 @@ function qiskitcircuit_registermapping(output_qasmfile)
     qc.swap(qr[1], qr[3])
 
     state = qi.Statevector.from_instruction(qc)
+    circuitmatrix = qi.Operator(qc)
 
     qasm2.dump(qc, output_qasmfile)
 
-    return np.real(state.data), np.imag(state.data)
+    return np.real(state.data),
+    np.imag(state.data), np.real(circuitmatrix.data),
+    np.imag(circuitmatrix.data)
 end
 
 function replicateqiskit(qiskitcircuit::Function)
     qasmfile_path, qasmfile_io = mktemp()
 
-    qiskitstate_re, qiskitstate_im = qiskitcircuit(qasmfile_path)
+    qiskitstate_re, qiskitstate_im, qiskitmatrix_re, qiskitmatrix_im = qiskitcircuit(
+        qasmfile_path
+    )
     qiskitstate = complex.(qiskitstate_re, qiskitstate_im)
+    qiskitmatrix = complex.(qiskitmatrix_re, qiskitmatrix_im)
 
     # Now we read the OpenQASM file and build the circuit with our library.
     sites, gatelist = open(qasmfile_path, "r") do f
@@ -78,13 +91,16 @@ function replicateqiskit(qiskitcircuit::Function)
         gates(code, "Qubit")
     end
 
-    psi = MPS(sites, "0")
+    state = MPS(sites, "0")
+    op = MPO(sites, "Id")
     for g in gatelist
-        psi = apply(g, psi)
+        state = apply(g, state)
+        op = apply(g, op)
     end
-    cbvec = TEM.qiskitvector(psi)
+    cbvec = TEM.qiskitvector(state)
+    cbmat = TEM.qiskitmatrix(op)
 
-    return isapprox(cbvec, qiskitstate)
+    return isapprox(cbvec, qiskitstate) && isapprox(cbmat, qiskitmatrix)
 end
 
 function paulistringordering(str::AbstractString)
