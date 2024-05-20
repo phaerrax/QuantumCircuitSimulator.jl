@@ -62,14 +62,17 @@ end
 
 function PauliString(str::AbstractString)
     ints = Vector{Int8}(undef, length(str))
-    for i in eachindex(str)
-        ints[i] = pauli_chartoint(str[i])
+    reversed_str = reverse(str)
+    for i in eachindex(reversed_str)
+        ints[i] = pauli_chartoint(reversed_str[i])
     end
     return PauliString(ints)
 end
 
 # Overload common methods for PauliStrings
-Base.string(p::PauliString) = join(pauli_inttochar.(p.string))
+
+# We reverse the Pauli string (when printing it) to comply with Qiskit's convention
+Base.string(p::PauliString) = join(pauli_inttochar.(reverse(p.string)))
 Base.length(p::PauliString) = length(p.string)
 Base.show(p::PauliString) = show(string(p))
 Base.print(p::PauliString) = print(string(p))
@@ -128,10 +131,8 @@ Return an ITensor corresponding the Pauli string operator.
 """
 function ITensors.op(sites::Vector{<:Index}, p::PauliString)
     length(p) != length(sites) && "Lengths of Pauli string and Index vector differ."
-    # Reverse the Pauli string to comply with Qiskit's convention
-    rp = reverse(p)
     x = ITensors.OneITensor()
-    for (s, i) in zip(string.(pauli_inttochar.(operators(rp))), indices(rp))
+    for (s, i) in zip(string.(pauli_inttochar.(operators(p))), indices(p))
         x *= op(sites, s, i)
     end
     return x
