@@ -4,14 +4,40 @@ using ITensors
     splitlines(code::AbstractString)
 
 Split code at semicolons, producing a list whose elements are single lines of code.
+
+# Example
+
+```julia-repl
+julia> code = "OPENQASM 2.0;\nqreg a[2];\ncx a[0], a[1];\nz a[1];";
+
+julia> splitlines(code)
+4-element Vector{SubString{String}}:
+ "OPENQASM 2.0"
+ "qreg a[2]"
+ "cx a[0], a[1]"
+ "z a[1]"
+```
 """
-function splitlines(str)
-    lines = split(str, ";")  # Split at semicolons
+function splitlines(code::AbstractString)
+    lines = split(code, ";")  # Split at semicolons
     lines = strip.(lines)  # Remove trailing and leading whitespace (such as stray '\n's)
     return filter(!isempty, lines)  # Remove empty lines
 end
 
-function stripcomments(str)
+"""
+    stripcomments(str::AbstractString)
+
+Remove comment lines from the given code.
+
+# Example
+```julia-repl
+julia> code = "OPENQASM 2.0;//this is a comment\nqreg a[2];\ncx a[0], a[1];\nz a[1];";
+
+julia> TEM.stripcomments(code)
+"OPENQASM 2.0;\nqreg a[2];\ncx a[0], a[1];\nz a[1];"
+```
+"""
+function stripcomments(str::AbstractString)
     # Remove comments, i.e. everything between a '//' and a newline
     # (Strings are immutable, so we can't use `replace!` here)
     return replace(str, r"//[^\n]*" => "")
@@ -29,21 +55,36 @@ function removepreprocessor!(lines::Vector{<:AbstractString})
 end
 
 """
-    qbit_sites(code::AbstractString)
+    qbit_registers(code::AbstractString)
 
 Return names and lengths of the quantum registers declared in the given
 code.
+
+# Example
+
+```julia-repl
+julia> code = "qreg a[3];\nqreg b[2];";
+
+julia> qbit_registers(code)
+(["a", "b"], [3, 2])
+```
 """
 function qbit_registers(code::AbstractString)
+    # Split code string by lines and remove comments and preprocessor instructions.
     lines = split(code, "\n")
     filter!(s -> !(occursin("//", s) || occursin("OPENQASM 2.0", s)), lines)
+
+    # Keep only lines containing the keyword "qreg", used to declare qbit variables.
     qreg_lines = filter(s -> occursin("qreg", s), lines)
+
+    # Parse each line to get the register name and length: each line is of the form
+    # `qreg name[n]` where `name` is an alphabetical string and `n` a positive integer.
     registers = match.(r"(?<name>[a-zA-Z0-9_]*)\[(?<length>\d+)\]", qreg_lines)
     #                              ^                   ^
-    #                     variable name      register length
-    names = [r["name"] for r in registers]
+    #                        register name      register length
+    names = [String(r["name"]) for r in registers]
     lengths = [parse(Int, r["length"]) for r in registers]
-    return String.(names), lengths
+    return names, lengths
 end
 
 """
@@ -51,8 +92,32 @@ end
 
 Return the ITensor site indices, of SiteType `st`, associated to the quantum registers
 defined in the given code.
+
+# Example
+
+```julia-repl
+julia> code = "qreg a[3];\nqreg b[2];";
+
+julia> qbit_sites(code, "Qubit")
+5-element Vector{ITensors.Index{Int64}}:
+ (dim=2|id=187|"Qubit,Site,a,n=1")
+ (dim=2|id=539|"Qubit,Site,a,n=2")
+ (dim=2|id=321|"Qubit,Site,a,n=3")
+ (dim=2|id=981|"Qubit,Site,b,n=1")
+ (dim=2|id=596|"Qubit,Site,b,n=2")
+```
 """
 function qbit_sites(code::AbstractString, st::AbstractString)
+    # Example: with the instructions
+    #   qreg a[3];
+    #   qreg b[2];
+    # Qiskit creates the sites a[0] a[1] a[2] b[0] b[1].
+    # When `qbit_registers` is called on this code, it returns
+    #   (["a", "b"], [3, 2])
+    # so zip(qbit_registers(code)...) iterates over
+    #   ("a", 3) ("b", 2)
+    # so we end up with
+    #   [siteinds(st, 3; addtags="a"); siteinds(st, 2; addtags="b")]
     return [
         [siteinds(st, n; addtags=id) for (id, n) in zip(qbit_registers(code)...)]...;
     ]
@@ -63,19 +128,37 @@ end
 
 Return a map that associates the quantum bit as written in the given
 code to the relative ITensor site.
+
+# Example
+
+```julia-repl
+julia> code = "qreg a[3];\nqreg b[2];";
+
+julia> qbit_map(code)
+Dict{String, Int64} with 5 entries:
+  "a[0]" => 1
+  "a[1]" => 2
+  "a[2]" => 3
+  "b[0]" => 4
+  "b[1]" => 5
+```
 """
 function qbit_map(code::AbstractString)
-    # Example:
-    #   qreg q[3]
-    #   qreg ancilla[1]
-    # results in
-    #   ("q", 3)
-    #   ("ancilla", 1)
-    # when `qbit_registers` is called. The map should read
-    # "q[0]"       --> 1
-    # "q[1]"       --> 2
-    # "q[2]"       --> 3
-    # "ancilla[0]" --> 4
+    # Example: with the instructions
+    #   qreg a[3];
+    #   qreg b[2];
+    # Qiskit creates the sites a[0] a[1] a[2] b[0] b[1].
+    # When `qbit_registers` is called on this code, it returns
+    #   (["a", "b"], [3, 2])
+    #
+    # This function creates a dictionary mapping Qiskit's qbit labels to a series of
+    # integers, which will be the positions of each qbit in the ITensors' vector of
+    # Index objects:
+    #   a[0] --> 1
+    #   a[1] --> 2
+    #   a[2] --> 3
+    #   b[0] --> 4
+    #   b[1] --> 5
     names, lengths = qbit_registers(code)
     ids = []
     for (j, name) in enumerate(names)
@@ -83,7 +166,7 @@ function qbit_map(code::AbstractString)
             push!(ids, "$name[$k]")
         end
     end
-    # Now the map is given by ids[k] --> k
+    # Now the map is given by the association ids[k] --> k
     return Dict(ids[k] => k for k in 1:length(ids))
 end
 
@@ -95,6 +178,20 @@ the site indices in `sites`.
 The `sitemap` argument is a dictionary-like map that assigns to each qbit in the OpenQASM
 circuit the corresponding site number in the ITensor system. See [`qbit_map`](@ref) for
 an example of such a map.
+
+# Example
+
+```julia-repl
+julia> code = "qreg a[2];";
+
+julia> qm = TEM.qbit_map(code);
+
+julia> qs = TEM.qbit_sites(code, "Qubit");
+
+julia> op = interpret(qs, qm, "cx a[0], a[1]")
+ITensor ord=4 (dim=2|id=953|"Qubit,Site,a,n=2")' (dim=2|id=463|"Qubit,Site,a,n=1")' (dim=2|id=953|"Qubit,Site,a,n=2") (dim=2|id=463|"Qubit,Site,a,n=1")
+NDTensors.Dense{Float64, Vector{Float64}}
+```
 """
 function interpret(sites::Vector{<:Index}, sitemap, line::AbstractString)
     tokens = match(r"(?<command>[^\s]*)\s(?<qbits>.*)", line)
@@ -164,11 +261,12 @@ function interpret(sites::Vector{<:Index}, sitemap, line::AbstractString)
         end
 
         if !isempty(args)
-            @info "Trying to call gate $gatename with site indices $(join(qbit_siteinds, ", ")) " *
-                "and additional arguments $(join(args, ", "))"
+            @info "Trying to call gate $gatename with site indices" *
+                "$(join(qbit_siteinds, ", ")) and additional " *
+                "arguments $(join(args, ", "))"
         else
-            @info "Trying to call gate $gatename with site indices $(join(qbit_siteinds, ", ")) " *
-                "and no arguments"
+            @info "Trying to call gate $gatename with site indices " *
+                "$(join(qbit_siteinds, ", ")) and no arguments"
         end
 
         # Get site type from `sites`
@@ -232,21 +330,44 @@ From OpenQASMexer
 Return a pair `(s, ops)` where `s` is a list of ITensor indices of SiteType `st`, one for
 each qbit declared in the given code, and `ops` is a list of ITensor operators,
 representing each gate, one by one, as in the given code.
+
+# Example
+
+```julia-repl
+julia> code = "OPENQASM 2.0;\nqreg a[2];\ncx a[0], a[1];";
+
+julia> sites, gates = TEM.gates(code, "Qubit");
+
+julia> sites
+2-element Vector{ITensors.Index{Int64}}:
+ (dim=2|id=680|"Qubit,Site,a,n=1")
+ (dim=2|id=758|"Qubit,Site,a,n=2")
+
+julia> gates[1]
+ITensor ord=4 (dim=2|id=758|"Qubit,Site,a,n=2")' (dim=2|id=680|"Qubit,Site,a,n=1")' (dim=2|id=758|"Qubit,Site,a,n=2") (dim=2|id=680|"Qubit,Site,a,n=1")
+NDTensors.Dense{Float64, Vector{Float64}}
+```
 """
 function gates(code::AbstractString, st::AbstractString)
     lines = splitlines(stripcomments(code))
     removepreprocessor!(lines)
 
-    s = qbit_sites(code, st)
+    sites = qbit_sites(code, st)
 
-    gates = interpret.(Ref(s), Ref(qbit_map(code)), lines)
+    gates = [interpret(sites, qbit_map(code), line) for line in lines]
     filter!(!isnothing, gates)  # Remove lines unrecognized by `interpret`
-    # Since `interpret` may return `nothing`, the `gates` list is actually a
-    # Vector{Union{Nothing, ITensor}} object (`filter!` does not change the type).
 
-    return s, convert(Vector{ITensor}, gates)
+    # Since `interpret` may return `nothing`, the `gates` list is actually a
+    # Vector{Union{Nothing, ITensor}} object (`filter!` does not change the type), so
+    # convert it (safely) to a Vector{ITensor} first.
+    return sites, convert(Vector{ITensor}, gates)
 end
 
+"""
+    arity(gatename::AbstractString)
+
+Return the arity, i.e. the number of accepted/required arguments, of the gate `gatename`.
+"""
 function arity(gatename::AbstractString)
     arities = Dict(
         "id" => 1,
