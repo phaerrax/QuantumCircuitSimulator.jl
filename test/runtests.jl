@@ -1,5 +1,6 @@
 using TEM
 using ITensors, LindbladVectorizedTensors
+using OpenQASM
 using Conda, PyCall, Pkg
 using Test
 
