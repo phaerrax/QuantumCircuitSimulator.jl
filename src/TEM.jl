@@ -1,6 +1,6 @@
 module TEM
 
-using ITensors, LindbladVectorizedTensors, JSON, OffsetArrays, LinearAlgebra, RBNF, OpenQASM
+using ITensors, LindbladVectorizedTensors, JSON, OffsetArrays, LinearAlgebra, RBNF, OpenQASM, DataStructures
 
 include("utils.jl")
 
@@ -15,7 +15,7 @@ include("paulistring.jl")
 include("qiskit_gates.jl")
 include("gates_vqbits.jl")
 
-export qbit_registers, qbit_sites, qbit_map, interpret, gates
+export gates, gatelayers
 include("qasm_itensors_parser.jl")
 
 export noiselayer, inversenoiselayer

@@ -243,52 +243,8 @@ end
 
 # Now we build the complete TEM MPO.
 # We need the circuit (i.e. the gate list) and the noise MPO.
-# The idea is that each gate comes with some noise, but how exactly do we layer the unitary
-# gates and the noise MPO? We could (but I don't know if this is right) group in a single
-# layer all subsequent gates that commute with each other; they can be put "in a row", so
-# to speak.
-# We can detect this by looking at the Indices of the gate ITensors: as soon as we see a
-# repeated index, we stop grouping them and insert a noise layer.
-# (Circuit barriers could come into play at this point...)
+# The idea is that each gate comes with some noise.
 
-# First, group the gates into layers.
-function gate_layers(code::AbstractString, st::AbstractString)
-    sites, gate_list = gates(code, st)
-
-    # We put the gates in a stack, so that we can pop them one at a time. We reverse the
-    # order, so that the first gate in the list is also the first in the stack.
-    gate_stack = Stack{ITensor}()
-    foreach(g -> push!(gate_stack, g), reverse(gate_list))
-
-    layers = Vector{ITensor}[]
-    # Will contain only gates, no noise MPOs. Each layer will be a vector of gates.
-
-    # Create a new empty layer.
-    current_layer = ITensor[]
-    while !isempty(gate_stack)
-        # Look up the next tensor in the gate sequence: it is `first(gate_stack)`.
-        # Does this gate have an Index which is already present in the current layer?
-        # 1. inds(first(gate_stack)) is a tuple of Index objects
-        # 2. inds.(current_layer) is a _vector_ of tuples of Index objects
-        # we need both of them to be a big list of Index, not of tuples:
-        # 1. `collect` transforms a Tuple into a Vector
-        # 2. `flatten` transforms a Vector of Tuple{X,X,...} into a Vector{X}
-        if havecommonelements(
-            collect(inds(first(gate_stack))), Iterators.flatten(inds.(current_layer))
-        )
-            # If yes: stop adding the layer, save it and start a new layer with this gate
-            push!(layers, current_layer)
-            current_layer = [pop!(gate_stack)]
-        else
-            # If not: add the gate to the current layer and go on.
-            push!(current_layer, pop!(gate_stack))
-        end
-    end
-
-    return sites, layers
-end
-
-# Then, build the MPO interleaving gates and noise layers.
 """
     tem_mpo(code::AbstractString,noiseptm_generator_vec,noiseptm_generator_mat;kwargs...)
 

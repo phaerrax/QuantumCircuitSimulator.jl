@@ -155,3 +155,49 @@ function gates(code::OpenQASM.Types.MainProgram, st::AbstractString)
 
     return sites, gates
 end
+
+"""
+    gatelayers(gates::Vector{ITensor})
+
+Return a list of MPOs, each one representing a layer of the circuit.
+A layer is created multiplying together as many adjacent gates as possible, i.e. the
+construction of the MPO ends as soon as the next gate in line acts on a qbit which is
+already acted on by the gates already in the MPO.
+This way, all gates in a layer commute with each other and can be executed in any order.
+"""
+function gatelayers(gates::Vector{ITensor})
+    # We can detect this by looking at the Indices of the gate ITensors: as soon as we see a
+    # repeated index, we stop grouping them and start a new layer.
+    # TODO: Implement circuit barriers.
+    # We put the gates in a stack, so that we can pop them one at a time. We reverse the
+    # order, so that the first gate in the list is also the first in the stack.
+    gatestack = Stack{ITensor}()
+    foreach(g -> push!(gatestack, g), reverse(gates))
+
+    layers = MPO[]
+    # Will contain only gates, no noise MPOs. Each layer will be a vector of gates.
+
+    # Create a new empty layer.
+    currentlayer = ITensor[]
+    while !isempty(gatestack)
+        # Look up the next tensor in the gate sequence: it is `first(gatestack)`.
+        # Does this gate have an Index which is already present in the current layer?
+        # 1. inds(first(gatestack)) is a tuple of Index objects
+        # 2. inds.(currentlayer) is a _vector_ of tuples of Index objects
+        # we need both of them to be a big list of Index, not of tuples:
+        # 1. `collect` transforms a Tuple into a Vector
+        # 2. `flatten` transforms a Vector of Tuple{X,X,...} into a Vector{X}
+        if havecommonelements(
+            collect(inds(first(gatestack))), Iterators.flatten(inds.(currentlayer))
+        )
+            # If yes: stop adding to the layer, save it and start a new layer with this gate
+            push!(layers, MPO(currentlayer))
+            currentlayer = [pop!(gatestack)]
+        else
+            # If not: add the gate to the current layer and go on.
+            push!(currentlayer, pop!(gatestack))
+        end
+    end
+
+    return layers
+end
