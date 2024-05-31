@@ -174,7 +174,7 @@ function gatelayers(gates::Vector{ITensor})
     gatestack = Stack{ITensor}()
     foreach(g -> push!(gatestack, g), reverse(gates))
 
-    layers = MPO[]
+    layers = Vector{ITensor}[]
     # Will contain only gates, no noise MPOs. Each layer will be a vector of gates.
 
     # Create a new empty layer.
@@ -191,7 +191,7 @@ function gatelayers(gates::Vector{ITensor})
             collect(inds(first(gatestack))), Iterators.flatten(inds.(currentlayer))
         )
             # If yes: stop adding to the layer, save it and start a new layer with this gate
-            push!(layers, MPO(currentlayer))
+            push!(layers, currentlayer)
             currentlayer = [pop!(gatestack)]
         else
             # If not: add the gate to the current layer and go on.

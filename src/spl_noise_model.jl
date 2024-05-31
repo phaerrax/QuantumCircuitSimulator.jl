@@ -246,7 +246,12 @@ end
 # The idea is that each gate comes with some noise.
 
 """
-    tem_mpo(code::AbstractString,noiseptm_generator_vec,noiseptm_generator_mat;kwargs...)
+    tem_mpo(
+    code::OpenQASM.Types.MainProgram,
+    noiseptm_generator_vec,
+    noiseptm_generator_mat;
+    kwargs...,
+)
 
 Return the tensor-network error-mitigation MPO starting from the circuit structure
 described in `code` (which contains the text of an OpenQASM source code file) and from
@@ -255,25 +260,30 @@ Keyword arguments are forwarded to the `apply` function, so that it is possible 
 the parameters for the contraction sequence (i.e. cutoff, maximum bond dimension).
 """
 function tem_mpo(
-    code::AbstractString, noiseptm_generator_vec, noiseptm_generator_mat; kwargs...
+    code::OpenQASM.Types.MainProgram,
+    noiseptm_generator_vec,
+    noiseptm_generator_mat;
+    kwargs...,
 )
-    sites, layers = gate_layers(code, "vQubit")
-    # Each layer is made of some ITensors, which do not necessarily cover the whole width
-    # of the circuit, so we call our `fullMPO` instead of the standard MPO constructor.
-    layer_mpos = [fullMPO(sites, layer) for layer in layers]
-    𝓝⁻¹ = inversenoiselayer(sites, noiseptm_generator_vec, noiseptm_generator_mat)
+    sites, unitarylayers = gatelayers(code, "vQubit")
+
+    # Build the full noise layer with the appropriate function.
+    inversenoise = inversenoiselayer(sites, noiseptm_generator_vec, noiseptm_generator_mat)
 
     # Middle-out contraction sequence
     # -------------------------------
     # M[k] = U[k] M[k-1] U[k]^-1 N[k]^-1,
     # M[0] = Id
     #
-    # U[k] is the k-th layer of our circuit, so basically layer_mpos[k], while N[k]^-1
-    # is our inverse noise MPO built following the sparse-Pauli-Lindblad model, for all k.
+    # U[k] is the k-th layer of our circuit, which is stored in 𝓤[k] as a vector of ITensor
+    # objects. We don't need to create an MPO out of them, we can just apply them directly
+    # one by one to the "main" MPO (they all commute so we don't need to care about the
+    # order of composition); N[k]^-1 is our inverse-noise MPO built following the
+    # sparse-Pauli-Lindblad model (the same for all k).
     tem = MPO(sites, "Id")
-    for 𝓤 in layers
-        tem = apply(𝓤, tem; apply_dag=true, kwargs...)
-        tem = apply(tem, 𝓝⁻¹; kwargs...)
+    for ul in unitarylayers
+        tem = apply(ul, tem; apply_dag=true, kwargs...)
+        tem = apply(tem, inversenoise; kwargs...)
     end
     return tem
 end

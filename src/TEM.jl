@@ -1,6 +1,13 @@
 module TEM
 
-using ITensors, LindbladVectorizedTensors, JSON, OffsetArrays, LinearAlgebra, RBNF, OpenQASM, DataStructures
+using ITensors,
+    LindbladVectorizedTensors,
+    JSON,
+    OffsetArrays,
+    LinearAlgebra,
+    RBNF,
+    OpenQASM,
+    DataStructures
 
 include("utils.jl")
 
