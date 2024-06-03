@@ -13,19 +13,16 @@
 # for every SiteType `st` common to all elements in `s`, and returns the first one that does
 # not evaluate to `nothing` (or errors out, if none is found).
 #
-# Moreover, this `gate` function is used by the automatic parser `parsegate` in
+# This `gate` function is used by the automatic parser `parsegate` in the file
 # src/qasm_itensor_parser.jl, which _always_ looks for "classical arguments" (i.e. numbers
 # given as parameters) in its instruction, and passes a `cargs` keyword argument to `gate`
 # containing them.
-# If there are no classical arguments, `cargs` will be `Any[]` but it is passed nonetheless.
-# This means that _every_ gate should be defined with a catch-all keyword argument, such
-# as `kwargs...` in the ones below, otherwise Julia will not find the correct method, and
-# the call to `gate` will return `nothing`.
-# If no classical arguments are actually required for the gate definition, then nothing more
-# is required. If they are, the `cargs` keyword argument can be "singled-out" by writing it
-# explicitly in the signature, e.g. by writing f(
-#   function gate(::GateName"...", ::SiteType"Qubit", s::Index; cargs, kwargs...)
-# so that the function body can use `cargs`.
+# If there are no classical arguments, i.e. if `cargs` is an empty list (usually `Any[]`)
+# then a version of `gate` with no keyword arguments is called.
+# If there are classical arguments, they keyword argument `cargs` will be used.
+# By defining `gate` methods as
+#   function gate(::GateName"...", ::SiteType"Qubit", s::Index; cargs)
+# the function body can then work with these classical arguments.
 # It is expected that `cargs` contain the classical arguments in the very same order as in
 # the OpenQASM 3.0 specification of the gate.
 
@@ -42,65 +39,63 @@ function ITensors.op(::OpName"U", st::SiteType"Qubit"; θ::Real, ϕ::Real, λ::R
     return ITensors.op(OpName("Rn"), st; θ=θ, ϕ=ϕ, λ=λ)
 end
 
-function gate(::GateName"id", ::SiteType"Qubit", s::Index; kwargs...)
+function gate(::GateName"id", ::SiteType"Qubit", s::Index)
     return ITensors.op("Id", s)
 end
 
-function gate(::GateName"u1", ::SiteType"Qubit", s::Index; cargs, kwargs...)
+function gate(::GateName"u1", ::SiteType"Qubit", s::Index; cargs)
     λ::Real = cargs[1]
     return ITensors.op("U", s; θ=0, ϕ=0, λ=λ)
 end
 
-function gate(::GateName"u2", ::SiteType"Qubit", s::Index; cargs, kwargs...)
+function gate(::GateName"u2", ::SiteType"Qubit", s::Index; cargs)
     ϕ::Real = cargs[1]
     λ::Real = cargs[2]
     return ITensors.op("U", s; θ=pi / 2, ϕ=ϕ, λ=λ)
 end
 
-function gate(::GateName"u3", ::SiteType"Qubit", s::Index; cargs, kwargs...)
+function gate(::GateName"u3", ::SiteType"Qubit", s::Index; cargs)
     θ::Real = cargs[1]
     ϕ::Real = cargs[2]
     λ::Real = cargs[3]
     return ITensors.op("U", s; θ=θ, ϕ=ϕ, λ=λ)
 end
 
-function gate(::GateName"u", st::SiteType"Qubit", s::Index; cargs, kwargs...)
-    return gate(GateName("u3"), st, s; cargs, kwargs...)
+function gate(::GateName"u", st::SiteType"Qubit", s::Index; cargs)
+    return gate(GateName("u3"), st, s; cargs)
 end
 
-function gate(::GateName"cx", ::SiteType"Qubit", control::Index, target::Index; kwargs...)
+function gate(::GateName"cx", ::SiteType"Qubit", control::Index, target::Index)
     return ITensors.op("CX", control, target)
 end
 
-function gate(::GateName"x", ::SiteType"Qubit", s::Index; kwargs...)
+function gate(::GateName"x", ::SiteType"Qubit", s::Index)
     return ITensors.op("X", s)
 end
 
-function gate(::GateName"y", ::SiteType"Qubit", s::Index; kwargs...)
+function gate(::GateName"y", ::SiteType"Qubit", s::Index)
     return ITensors.op("Y", s)
 end
 
-function gate(::GateName"z", ::SiteType"Qubit", s::Index; kwargs...)
+function gate(::GateName"z", ::SiteType"Qubit", s::Index)
     return ITensors.op("Z", s)
 end
 
-function gate(::GateName"p", ::SiteType"Qubit", s::Index; cargs, kwargs...)
+function gate(::GateName"p", ::SiteType"Qubit", s::Index; cargs)
     ϕ::Real = cargs[1]
     return ITensors.op("Phase", s; ϕ=ϕ)
 end
 
-function gate(
-    ::GateName"cp", ::SiteType"Qubit", control::Index, target::Index; cargs, kwargs...
-)
+function gate(::GateName"cp", ::SiteType"Qubit", control::Index, target::Index; cargs)
     ϕ::Real = cargs[1]
     return ITensors.op("CPhase", control, target; ϕ=ϕ)
 end
 
-function gate(::GateName"s", ::SiteType"Qubit", s::Index; kwargs...)
+function gate(::GateName"s", ::SiteType"Qubit", s::Index)
     return ITensors.op("S", s)
 end
 
-function gate(::GateName"sdg", ::SiteType"Qubit", s::Index; kwargs...)  # Adjoint of "S"
+function gate(::GateName"sdg", ::SiteType"Qubit", s::Index)  # Adjoint of "S"
     # S = Phase(-π/2), where
     #
     #             ⎛ 1       0      ⎞
@@ -111,27 +106,21 @@ function gate(::GateName"sdg", ::SiteType"Qubit", s::Index; kwargs...)  # Adjoin
     return ITensors.op("Phase", s; ϕ=-pi / 2)
 end
 
-function gate(::GateName"h", ::SiteType"Qubit", s::Index; kwargs...)
+function gate(::GateName"h", ::SiteType"Qubit", s::Index)
     return ITensors.op("H", s)
 end
 
-function gate(::GateName"t", ::SiteType"Qubit", s::Index; kwargs...)
+function gate(::GateName"t", ::SiteType"Qubit", s::Index)
     return ITensors.op("T", s)
 end
 
-# FIXME
-function gate(::GateName"tdg", ::SiteType"Qubit", s::Index; kwargs...)  # Adjoint of "T"
+function gate(::GateName"tdg", ::SiteType"Qubit", s::Index)  # Adjoint of "T"
     # T = Phase(π/4), so T* = Phase(π/4)* = Phase(-π/4)
     return ITensors.op("Phase", s; ϕ=-pi / 4)
 end
 
 function gate(
-    ::GateName"ccx",
-    ::SiteType"Qubit",
-    control1::Index,
-    control2::Index,
-    target::Index;
-    kwargs...,
+    ::GateName"ccx", ::SiteType"Qubit", control1::Index, control2::Index, target::Index
 )
     return ITensors.op("Toffoli", control1, control2, target)
 end
@@ -142,8 +131,7 @@ function gate(
     control1::Index,
     control2::Index,
     control3::Index,
-    target::Index;
-    kwargs...,
+    target::Index,
 )
     return ITensors.op("CCCNOT", control1, control2, control3, target)
 end
@@ -155,83 +143,71 @@ function gate(
     control2::Index,
     control3::Index,
     control4::Index,
-    target::Index;
-    kwargs...,
+    target::Index,
 )
     return ITensors.op("CCCCNOT", control1, control2, control3, control4, target)
 end
 
-function gate(::GateName"rx", ::SiteType"Qubit", s::Index; cargs, kwargs...)
+function gate(::GateName"rx", ::SiteType"Qubit", s::Index; cargs)
     θ::Real = cargs[1]
     return ITensors.op("Rx", s; θ=θ)
 end
 
-function gate(::GateName"ry", ::SiteType"Qubit", s::Index; cargs, kwargs...)
+function gate(::GateName"ry", ::SiteType"Qubit", s::Index; cargs)
     θ::Real = cargs[1]
     return ITensors.op("Ry", s; θ=θ)
 end
 
-function gate(::GateName"rz", ::SiteType"Qubit", s::Index; cargs, kwargs...)
+function gate(::GateName"rz", ::SiteType"Qubit", s::Index; cargs)
     θ::Real = cargs[1]
     return ITensors.op("Rz", s; θ=θ)
 end
 
-function gate(::GateName"sx", st::SiteType"Qubit", s::Index; kwargs...)
+function gate(::GateName"sx", st::SiteType"Qubit", s::Index)
     sdg = ITensors.op(OpName("Phase"), st; ϕ=-pi / 2)
     h = ITensors.op(OpName("H"), st)
     return op(exp(im * pi / 4) * sdg * h * sdg, s)
 end
 
-function gate(::GateName"sxdg", st::SiteType"Qubit", s::Index; kwargs...)
+function gate(::GateName"sxdg", st::SiteType"Qubit", s::Index)
     sdg = ITensors.op(OpName("Phase"), st; ϕ=-pi / 2)
     h = ITensors.op(OpName("H"), st)
     return op((exp(im * pi / 4) * sdg * h * sdg)', s)
 end
 
-function gate(::GateName"cy", ::SiteType"Qubit", control::Index, target::Index; kwargs...)
+function gate(::GateName"cy", ::SiteType"Qubit", control::Index, target::Index)
     return ITensors.op("CY", control, target)
 end
 
-function gate(::GateName"cz", ::SiteType"Qubit", control::Index, target::Index; kwargs...)
+function gate(::GateName"cz", ::SiteType"Qubit", control::Index, target::Index)
     return ITensors.op("CZ", control, target)
 end
 
-function gate(::GateName"ch", ::SiteType"Qubit", control::Index, target::Index; kwargs...)
+function gate(::GateName"ch", ::SiteType"Qubit", control::Index, target::Index)
     return ITensors.op("CH", control, target)
 end
 
-function gate(::GateName"swap", ::SiteType"Qubit", s1::Index, s2::Index; kwargs...)
+function gate(::GateName"swap", ::SiteType"Qubit", s1::Index, s2::Index)
     return ITensors.op("Swap", s1, s2)
 end
 
 function gate(
-    ::GateName"cswap",
-    ::SiteType"Qubit",
-    control::Index,
-    target1::Index,
-    target2::Index;
-    kwargs...,
+    ::GateName"cswap", ::SiteType"Qubit", control::Index, target1::Index, target2::Index
 )
     return ITensors.op("CSwap", control, target1, target2)
 end
 
-function gate(
-    ::GateName"crx", ::SiteType"Qubit", control::Index, target::Index; cargs, kwargs...
-)
+function gate(::GateName"crx", ::SiteType"Qubit", control::Index, target::Index; cargs)
     θ::Real = cargs[1]
     return ITensors.op("CRx", control, target; θ=θ)
 end
 
-function gate(
-    ::GateName"cry", ::SiteType"Qubit", control::Index, target::Index; cargs, kwargs...
-)
+function gate(::GateName"cry", ::SiteType"Qubit", control::Index, target::Index; cargs)
     θ::Real = cargs[1]
     return ITensors.op("CRy", control, target; θ=θ)
 end
 
-function gate(
-    ::GateName"crz", ::SiteType"Qubit", control::Index, target::Index; cargs, kwargs...
-)
+function gate(::GateName"crz", ::SiteType"Qubit", control::Index, target::Index; cargs)
     θ::Real = cargs[1]
     return ITensors.op("CRz", control, target; θ=θ)
     # This is the CRz gate implementation as defined in the qelib1.inc file.
@@ -247,9 +223,7 @@ function gate(
     #   )
 end
 
-function gate(
-    ::GateName"cu1", ::SiteType"Qubit", control::Index, target::Index; cargs, kwargs...
-)
+function gate(::GateName"cu1", ::SiteType"Qubit", control::Index, target::Index; cargs)
     λ::Real = cargs[1]
     return ITensors.op("CU1", control, target; λ=λ)
     # This is the cu1 gate implementation as defined in the qelib1.inc file:
@@ -276,9 +250,7 @@ function gate(
     # as in the OpenQASM 3.0 specs.
 end
 
-function gate(
-    ::GateName"cu3", ::SiteType"Qubit", control::Index, target::Index; cargs, kwargs...
-)
+function gate(::GateName"cu3", ::SiteType"Qubit", control::Index, target::Index; cargs)
     θ::Real = cargs[1]
     ϕ::Real = cargs[2]
     λ::Real = cargs[3]

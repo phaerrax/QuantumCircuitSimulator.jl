@@ -110,7 +110,12 @@ function parsegate(sites::Vector{<:Index}, sitemap, instr::OpenQASM.Types.Instru
     # `qbit_inds` contains the indices, of the `sites` list, that we need to consider.
 
     parameters = @. eval(Meta.parse(qasmstring(instr.cargs)))
-    return gate(instr.name, sites, qbit_inds...; cargs=parameters)
+    if isempty(parameters)
+        g = gate(instr.name, sites, qbit_inds...)
+    else
+        g = gate(instr.name, sites, qbit_inds...; cargs=parameters)
+    end
+    return g
 end
 
 apply_txt(a, b) = "apply($a, $b)"
