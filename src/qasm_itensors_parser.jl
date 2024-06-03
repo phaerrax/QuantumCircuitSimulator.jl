@@ -123,6 +123,62 @@ function parsegate(sites::Vector{<:Index}, sitemap, instr::OpenQASM.Types.Instru
     return nothing
 end
 
+apply_txt(a, b) = "apply($a, $b)"
+apply_txt(a, b...) = apply_txt(a, apply_txt(b...))
+
+"""
+    definition(declaration::OpenQASM.Types.Gate)
+
+Return a string containing Julia code necessary to add a `gate` method with the given name
+using the instructions contained in the `declaration` in OpenQASM format.
+
+# Example
+
+```julia-repl
+julia> str = "OPENQASM 2.0;\ngate rzx(param0) q0, q1 {\nh q1;\ncx q0, q1;\nrz(param0) q1;\ncx q0, q1;\nh q1;\n}"
+
+julia> g = OpenQASM.parse(str);
+
+julia> TEM.create(g.prog[1])
+"function TEM.gate(::GateName\"rzx\", q0::Index, q1::Index, param0::Real)\napply(gate(\"h\", q1), apply(gate(\"cx\", q0, q1), apply(gate(\"rz\", q1, param0), apply(gate(\"cx\", q0, q1), gate(\"h\", q1)))))\nend"
+```
+"""
+function definition(gate::OpenQASM.Types.Gate)
+    gatename = gate.decl.name.str  # Gate name
+    qbits = [qbit.str for qbit in gate.decl.qargs]  # Gate qubit arguments
+    params = [p.str for p in gate.decl.cargs]  # Gate parameter names
+
+    index_list = ["$q::Index" for q in qbits]
+    param_list = ["$p::Real" for p in params]
+
+    fn_signature =
+        "function TEM.gate(" *
+        join(
+            [
+                "::GateName\"$gatename\""
+                index_list
+                param_list
+            ],
+            ", ",
+        ) *
+        ")"
+    fn_body = []
+    for instr in gate.body
+        name = "\"" * instr.name * "\""
+        indices = [qa.name.str for qa in instr.qargs]
+        parameters = [qasmstring(ca) for ca in instr.cargs]
+        push!(fn_body, "gate(" * join([name; indices; parameters], ", ") * ")")
+    end
+    # Now we transform the body so that the gates are correctly multiplied. We use the
+    # `apply` function, i.e. `[a, b, c]` is turned into `apply(a, apply(b, c))`.
+    if length(fn_body) == 1  # TODO: what if length(fn_body) == 0?
+        str = join([fn_signature; fn_body; "end"], "\n")
+    else
+        str = join([fn_signature; apply_txt(fn_body...); "end"], "\n")
+    end
+    return str
+end
+
 """
     gates(code::OpenQASM.Types.MainProgram, st::AbstractString)
 
