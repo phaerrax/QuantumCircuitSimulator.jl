@@ -82,6 +82,11 @@ function qasmstring(args::Tuple)
     return *(stringparts...)
 end
 
+function qasmstring(args::Vector{Any})
+    stringparts = qasmstring.(args)  # Recurse into arg
+    return *(stringparts...)
+end
+
 function qasmstring(arg::OpenQASM.Types.Call)
     return string(arg)
 end
