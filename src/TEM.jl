@@ -13,6 +13,7 @@ include("utils.jl")
 
 export gate, GateName
 include("gatename.jl")
+include("gate.jl")
 
 export PauliString, indices, operators, order, SPLNoiseModel, nqbits
 include("paulistring.jl")

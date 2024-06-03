@@ -107,20 +107,10 @@ function parsegate(sites::Vector{<:Index}, sitemap, instr::OpenQASM.Types.Instru
 
     qbit_list = string.(instr.qargs)  # This will be something like ["q[1]", "q[4]"]
     qbit_inds = [sitemap[n] for n in qbit_list]
-    qbit_siteinds = [sites[n] for n in qbit_inds]
     # `qbit_inds` contains the indices, of the `sites` list, that we need to consider.
-    # `qbit_siteinds` contains the actual Index objects within `sites`.
-
-    # Get site type from `sites`
-    commontags_s = ITensors.commontags(sites...)
-    common_stypes = ITensors._sitetypes(commontags_s)
 
     parameters = @. eval(Meta.parse(qasmstring(instr.cargs)))
-    for st in common_stypes
-        g = gate(GateName(instr.name), st, qbit_siteinds..., parameters...)
-        !isnothing(g) && return g
-    end
-    return nothing
+    return gate(instr.name, sites, qbit_inds...; cargs=parameters)
 end
 
 apply_txt(a, b) = "apply($a, $b)"
@@ -207,13 +197,14 @@ function gates(code::OpenQASM.Types.MainProgram, st::AbstractString)
     sites = qbitsites(code, st)
     qmap = qbitmap(code)
 
-    gates =
-        parsegate.(
-            Ref(sites),
-            Ref(qmap),
-            filter(line -> line isa OpenQASM.Types.Instruction, code.prog),
-        )
-
+    gates = []
+    for line in code.prog
+        if line isa OpenQASM.Types.Instruction
+            push!(gates, parsegate(sites, qmap, line))
+        elseif line isa OpenQASM.Types.Gate
+            "ciao"
+        end
+    end
     return sites, gates
 end
 
