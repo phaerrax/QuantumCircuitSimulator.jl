@@ -121,11 +121,15 @@ end
 apply_txt(a, b) = "apply($a, $b)"
 apply_txt(a, b...) = apply_txt(a, apply_txt(b...))
 
+function sitetypename(::SiteType{T}) where {T}
+    return string(T)
+end
+
 """
-    definition(declaration::OpenQASM.Types.Gate)
+    definition(declaration::OpenQASM.Types.Gate, st::SiteType)
 
 Return a string containing Julia code necessary to add a `gate` method with the given name
-using the instructions contained in the `declaration` in OpenQASM format.
+and the site type `st` using the instructions contained in the OpenQASM `declaration`.
 
 # Example
 
@@ -134,42 +138,61 @@ julia> str = "OPENQASM 2.0;\ngate rzx(param0) q0, q1 {\nh q1;\ncx q0, q1;\nrz(pa
 
 julia> g = OpenQASM.parse(str);
 
-julia> TEM.create(g.prog[1])
-"function TEM.gate(::GateName\"rzx\", q0::Index, q1::Index, param0::Real)\napply(gate(\"h\", q1), apply(gate(\"cx\", q0, q1), apply(gate(\"rz\", q1, param0), apply(gate(\"cx\", q0, q1), gate(\"h\", q1)))))\nend"
+julia> print(TEM.definition(g.prog[1], SiteType("Qubit")))
+function TEM.gate(::GateName"rzx", ::SiteType"Qubit", q0::Index, q1::Index; cargs)
+param0::Real = cargs[1]
+apply(gate("h", q1), apply(gate("cx", q0, q1), apply(gate("rz", q1; cargs=(param0)), apply(gate("cx", q0, q1), gate("h", q1)))))
+end
 ```
 """
-function definition(gate::OpenQASM.Types.Gate)
+function definition(gate::OpenQASM.Types.Gate, st::SiteType)
+    # Unfortunately the `gate` method definitions require a SiteType argument, so even
+    # with the "cargs as kwargs" syntax we cannot avoid passing it.
     gatename = gate.decl.name.str  # Gate name
     qbits = [qbit.str for qbit in gate.decl.qargs]  # Gate qubit arguments
     params = [p.str for p in gate.decl.cargs]  # Gate parameter names
 
     index_list = ["$q::Index" for q in qbits]
-    param_list = ["$p::Real" for p in params]
 
-    fn_signature =
-        "function TEM.gate(" *
-        join(
-            [
-                "::GateName\"$gatename\""
-                index_list
-                param_list
-            ],
-            ", ",
-        ) *
-        ")"
+    fn_signature_decl = "function TEM.gate("
+    fn_signature_parts = [
+        "::GateName\"" * gatename * "\""
+        "::SiteType\"" * sitetypename(st) * "\""
+        index_list
+    ]
+    fn_signature = if isempty(params)
+        fn_signature_decl * join(fn_signature_parts, ", ") * ")"
+    else
+        fn_signature_decl * join(fn_signature_parts, ", ") * "; cargs)"
+    end
+
+    fn_cargs_declaration = ["$p::Real = cargs[$i]" for (i, p) in enumerate(params)]
+
     fn_body = []
     for instr in gate.body
         name = "\"" * instr.name * "\""
         indices = [qa.name.str for qa in instr.qargs]
         parameters = [qasmstring(ca) for ca in instr.cargs]
-        push!(fn_body, "gate(" * join([name; indices; parameters], ", ") * ")")
+        if isempty(parameters)
+            push!(fn_body, "gate(" * join([name; indices], ", ") * ")")
+        else
+            push!(
+                fn_body,
+                "gate(" *
+                join([name; indices], ", ") *
+                "; cargs=(" *
+                join(parameters, ",") *
+                "))",
+            )
+        end
     end
-    # Now we transform the body so that the gates are correctly multiplied. We use the
+
+    # We transform the body so that the gates are correctly multiplied. We use the
     # `apply` function, i.e. `[a, b, c]` is turned into `apply(a, apply(b, c))`.
     if length(fn_body) == 1  # TODO: what if length(fn_body) == 0?
-        str = join([fn_signature; fn_body; "end"], "\n")
+        str = join([fn_signature; fn_cargs_declaration; fn_body; "end"], "\n")
     else
-        str = join([fn_signature; apply_txt(fn_body...); "end"], "\n")
+        str = join([fn_signature; fn_cargs_declaration; apply_txt(fn_body...); "end"], "\n")
     end
     return str
 end
@@ -207,7 +230,7 @@ function gates(code::OpenQASM.Types.MainProgram, st::AbstractString)
         if line isa OpenQASM.Types.Instruction
             push!(gates, parsegate(sites, qmap, line))
         elseif line isa OpenQASM.Types.Gate
-            "ciao"
+            error()
         end
     end
     return sites, gates
