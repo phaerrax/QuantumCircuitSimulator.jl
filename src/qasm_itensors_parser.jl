@@ -111,15 +111,32 @@ function parsegate(sites::Vector{<:Index}, sitemap, instr::OpenQASM.Types.Instru
 
     parameters = @. eval(Meta.parse(qasmstring(instr.cargs)))
     if isempty(parameters)
-        g = gate(instr.name, sites, qbit_inds...)
+        g = invokelatest(gate, instr.name, sites, qbit_inds...)
     else
-        g = gate(instr.name, sites, qbit_inds...; cargs=parameters)
+        g = invokelatest(gate, instr.name, sites, qbit_inds...; cargs=parameters)
     end
+    # Why `invokelatest`? The `parsegate` function is called repeatedly within `gates`; if
+    # the currently parsed line is a gate declaration, then a new method is added to the
+    # `gate` function (with a new GateName). However this triggers the so-called "world
+    # age problem", printing the warning "method too new to be called from this world
+    # context". Basically, the just-declared new method is "too new" for Julia's JIT
+    # compiler to be taken into consideration. As a result, the new method basically does
+    # not exist, so any following gate instruction calling that gate fails.
+    # The `invokelatest` function (from Julia's Base library) allows us to circumvent this
+    # issue by telling the compiler to look up the latest definition.
     return g
 end
 
-apply_txt(a, b) = "apply($a, $b)"
-apply_txt(a, b...) = apply_txt(a, apply_txt(b...))
+compose_txt(a, b) = "compose($a, $b)"
+compose_txt(a, b...) = compose_txt(a, compose_txt(b...))
+
+function compose(a::ITensor, b::ITensor; apply_dag::Bool=false)
+    if isempty(commoninds(a, b; plev=0))
+        return a * b
+    else
+        return apply(a, b; apply_dag)
+    end
+end
 
 function sitetypename(::SiteType{T}) where {T}
     return string(T)
@@ -141,7 +158,7 @@ julia> g = OpenQASM.parse(str);
 julia> print(TEM.definition(g.prog[1], SiteType("Qubit")))
 function TEM.gate(::GateName"rzx", ::SiteType"Qubit", q0::Index, q1::Index; cargs)
 param0::Real = cargs[1]
-apply(gate("h", q1), apply(gate("cx", q0, q1), apply(gate("rz", q1; cargs=(param0)), apply(gate("cx", q0, q1), gate("h", q1)))))
+compose(gate("h", q1), compose(gate("cx", q0, q1), compose(gate("rz", q1; cargs=(param0)), compose(gate("cx", q0, q1), gate("h", q1)))))
 end
 ```
 """
@@ -192,7 +209,10 @@ function definition(gate::OpenQASM.Types.Gate, st::SiteType)
     if length(fn_body) == 1  # TODO: what if length(fn_body) == 0?
         str = join([fn_signature; fn_cargs_declaration; fn_body; "end"], "\n")
     else
-        str = join([fn_signature; fn_cargs_declaration; apply_txt(fn_body...); "end"], "\n")
+        str = join(
+            [fn_signature; fn_cargs_declaration; compose_txt(fn_body...); "end"],
+            "\n",
+        )
     end
     return str
 end
@@ -230,7 +250,8 @@ function gates(code::OpenQASM.Types.MainProgram, st::AbstractString)
         if line isa OpenQASM.Types.Instruction
             push!(gates, parsegate(sites, qmap, line))
         elseif line isa OpenQASM.Types.Gate
-            error()
+            new_gate_method = definition(line, SiteType(st))
+            eval(Meta.parse(new_gate_method))
         end
     end
     return sites, gates

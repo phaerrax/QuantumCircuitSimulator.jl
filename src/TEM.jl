@@ -23,7 +23,7 @@ include("paulistring.jl")
 include("qiskit_gates.jl")
 include("gates_vqbits.jl")
 
-export gates, gatelayers
+export compose, gates, gatelayers
 include("qasm_itensors_parser.jl")
 
 export noiselayer, inversenoiselayer
