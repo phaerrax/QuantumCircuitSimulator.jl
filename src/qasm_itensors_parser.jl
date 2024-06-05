@@ -151,14 +151,24 @@ and the site type `st` using the instructions contained in the OpenQASM `declara
 # Example
 
 ```julia-repl
-julia> str = "OPENQASM 2.0;\ngate rzx(param0) q0, q1 {\nh q1;\ncx q0, q1;\nrz(param0) q1;\ncx q0, q1;\nh q1;\n}"
+julia> str = "OPENQASM 2.0;
+qreg q[2];
+gate test(a, b, c) q0, q1 {
+  h q1;
+  cx q0, q1;
+  rz(a) q1;
+  u2(b, c) q0;
+  y q1;
+}"
 
 julia> g = OpenQASM.parse(str);
 
-julia> print(TEM.definition(g.prog[1], SiteType("Qubit")))
-function TEM.gate(::GateName"rzx", ::SiteType"Qubit", q0::Index, q1::Index; cargs)
-param0::Real = cargs[1]
-compose(gate("h", q1), compose(gate("cx", q0, q1), compose(gate("rz", q1; cargs=(param0)), compose(gate("cx", q0, q1), gate("h", q1)))))
+julia> print(TEM.definition(g.prog[2], SiteType("Qubit")))
+function TEM.gate(::GateName"test", ::SiteType"Qubit", q0::Index, q1::Index; cargs)
+a::Real = cargs[1]
+b::Real = cargs[2]
+c::Real = cargs[3]
+compose(gate("y", q1), compose(gate("u2", q0; cargs=(b,c)), compose(gate("rz", q1; cargs=(a)), compose(gate("cx", q0, q1), gate("h", q1)))))
 end
 ```
 """
@@ -210,7 +220,7 @@ function definition(gate::OpenQASM.Types.Gate, st::SiteType)
         str = join([fn_signature; fn_cargs_declaration; fn_body; "end"], "\n")
     else
         str = join(
-            [fn_signature; fn_cargs_declaration; compose_txt(fn_body...); "end"],
+            [fn_signature; fn_cargs_declaration; compose_txt(reverse(fn_body)...); "end"],
             "\n",
         )
     end
