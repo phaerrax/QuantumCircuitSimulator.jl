@@ -230,9 +230,14 @@ end
 """
     gates(code::OpenQASM.Types.MainProgram, st::AbstractString)
 
-Return a pair `(s, ops)` where `s` is a list of ITensor indices of SiteType `st`, one for
-each qbit declared in the given code, and `ops` is a list of ITensor operators,
-representing each gate, one by one, as in the given code.
+Create a list of gates (ITensor operators) as parsed from the given OpenQASM `code`,
+returning a triple `(s, qmap, gates)` where:
+
+* `s` is a list of ITensor indices of SiteType `st`, one for each qbit declared in the
+given code,
+* `qmap` is a dictionary mapping each qbit label in the OpenQASM code (i.e. "q[0]", "q[1]"
+and so on) to the associated ITensor site Index,
+* `ops` is a list of ITensor operators, one for each gate, in order.
 
 # Example
 
@@ -264,7 +269,45 @@ function gates(code::OpenQASM.Types.MainProgram, st::AbstractString)
             eval(Meta.parse(new_gate_method))
         end
     end
-    return sites, gates
+    return sites, qmap, gates
+end
+
+"""
+    gates(code::OpenQASM.Types.MainProgram, sites::Vector{<:Index}, qmap)
+
+Return a list of gates (ITensor operators) as parsed from the given OpenQASM `code`,
+building the operators on the `sites` Index objects and using `qbitmap` to translate
+OpenQASM qbit positions to the ITensor sites.
+The given `sites` and `qmap` are checked to ensure they are compatible to the ones that
+would be generated from `code`.
+"""
+function gates(code::OpenQASM.Types.MainProgram, sites::Vector{<:Index}, qmap)
+    commontags_s = ITensors.commontags(sites...)
+    common_stypes = ITensors._sitetypes(commontags_s)
+    if "Qubit" in sitetypename.(common_stypes)
+        st = "Qubit"
+    elseif "vQubit" in sitetypename.(common_stypes)
+        st = "vQubit"
+    else
+        error("Unrecognized SiteType: only \"Qubit\" and \"vQubit\" are allowed.")
+    end
+
+    newsites = qbitsites(code, st)
+    newqmap = qbitmap(code)
+    if (length(newsites) != length(sites)) || (newqmap != qmap)
+        error("Sites not compatible with input OpenQASM code.")
+    end
+
+    gates = []
+    for line in code.prog
+        if line isa OpenQASM.Types.Instruction
+            push!(gates, parsegate(sites, qmap, line))
+        elseif line isa OpenQASM.Types.Gate
+            new_gate_method = definition(line, SiteType(st))
+            eval(Meta.parse(new_gate_method))
+        end
+    end
+    return gates
 end
 
 """
