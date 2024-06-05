@@ -11,7 +11,7 @@ using ITensors,
 
 include("utils.jl")
 
-export gate, GateName
+export gate, GateName, @GateName_str
 include("gatename.jl")
 include("gate.jl")
 

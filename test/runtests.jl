@@ -22,3 +22,9 @@ include("noise_layer_preserves_trace.jl")
 @testset "Noise layer construction" begin
     @test noise_layer_preserves_trace(; N=20)
 end
+
+include("add_gate_from_file.jl")
+
+@testset "Automatic gate definition" begin
+    @test add_gate_from_file()
+end
