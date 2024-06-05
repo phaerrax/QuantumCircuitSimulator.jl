@@ -28,3 +28,9 @@ include("add_gate_from_file.jl")
 @testset "Automatic gate definition" begin
     @test add_gate_from_file()
 end
+
+include("bell_state_from_openqasm.jl")
+
+@testset "Build Bell state from complicated OpenQASM circuit" begin
+    @test bell_state_from_openqasm(; atol=1e-12)
+end
