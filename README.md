@@ -1,8 +1,12 @@
-# Tensor-Network Error Mitigation (TEM)
+# QuantumCircuitSimulator.jl
 
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 
-A rudimental Julia implementation of the tensor-network error-mitigation technique developed in [1].
+With this Julia package you can load quantum circuits from OpenQASM files and
+simulate them with tensor networks, using the
+[ITensor](https://github.com/ITensor/ITensors.jl) library.
+
+The package allows you to simulate noiseless or noisy circuits, and it also contains a rudimental implementation of the tensor-network error-mitigation technique developed in [1].
 
 
 # References 

@@ -10,7 +10,7 @@ function add_gate_from_file()
     }"
     decl = OpenQASM.parse(str)
     st = SiteType("Qubit")
-    qs = TEM.qbitsites(decl, "Qubit")
-    eval(Meta.parse(TEM.definition(decl.prog[2], st)))
+    qs = QuantumCircuitSimulator.qbitsites(decl, "Qubit")
+    eval(Meta.parse(QuantumCircuitSimulator.definition(decl.prog[2], st)))
     return !isnothing(invokelatest(gate, "test", qs, 1, 2; cargs=(pi / 4, 0, sin(2))))
 end

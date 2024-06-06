@@ -1,4 +1,4 @@
-module TEM
+module QuantumCircuitSimulator
 
 using ITensors,
     LindbladVectorizedTensors,

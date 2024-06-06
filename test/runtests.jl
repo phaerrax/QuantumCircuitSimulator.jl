@@ -1,4 +1,4 @@
-using TEM
+using QuantumCircuitSimulator
 using ITensors, LindbladVectorizedTensors
 using OpenQASM
 using Conda, PyCall, Pkg

@@ -163,8 +163,8 @@ gate test(a, b, c) q0, q1 {
 
 julia> g = OpenQASM.parse(str);
 
-julia> print(TEM.definition(g.prog[2], SiteType("Qubit")))
-function TEM.gate(::GateName"test", ::SiteType"Qubit", q0::Index, q1::Index; cargs)
+julia> print(QuantumCircuitSimulator.definition(g.prog[2], SiteType("Qubit")))
+function QuantumCircuitSimulator.gate(::GateName"test", ::SiteType"Qubit", q0::Index, q1::Index; cargs)
 a::Real = cargs[1]
 b::Real = cargs[2]
 c::Real = cargs[3]
@@ -181,7 +181,7 @@ function definition(gate::OpenQASM.Types.Gate, st::SiteType)
 
     index_list = ["$q::Index" for q in qbits]
 
-    fn_signature_decl = "function TEM.gate("
+    fn_signature_decl = "function QuantumCircuitSimulator.gate("
     fn_signature_parts = [
         "::GateName\"" * gatename * "\""
         "::SiteType\"" * sitetypename(st) * "\""
