@@ -260,7 +260,7 @@ function gates(code::OpenQASM.Types.MainProgram, st::AbstractString)
     sites = qbitsites(code, st)
     qmap = qbitmap(code)
 
-    gates = []
+    gates = ITensor[]
     for line in code.prog
         if line isa OpenQASM.Types.Instruction
             push!(gates, parsegate(sites, qmap, line))
@@ -298,7 +298,7 @@ function gates(code::OpenQASM.Types.MainProgram, sites::Vector{<:Index}, qmap)
         error("Sites not compatible with input OpenQASM code.")
     end
 
-    gates = []
+    gates = ITensor[]
     for line in code.prog
         if line isa OpenQASM.Types.Instruction
             push!(gates, parsegate(sites, qmap, line))
@@ -341,17 +341,23 @@ function gatelayers(gates::Vector{ITensor})
         # we need both of them to be a big list of Index, not of tuples:
         # 1. `collect` transforms a Tuple into a Vector
         # 2. `flatten` transforms a Vector of Tuple{X,X,...} into a Vector{X}
-        if havecommonelements(
-            collect(inds(first(gatestack))), Iterators.flatten(inds.(currentlayer))
-        )
-            # If yes: stop adding to the layer, save it and start a new layer with this gate
-            push!(layers, currentlayer)
-            currentlayer = [pop!(gatestack)]
+        nextgate = pop!(gatestack)
+
+        inds_next = collect(inds(nextgate))  # indices of the next gate in the queue
+        inds_current = Iterators.flatten(inds.(currentlayer))  # all indices in the layer
+        inds_common = intersect(inds_next, inds_current)
+        if isempty(inds_common)
+            # If there are no common indices: add the gate to the current layer and go on.
+            push!(currentlayer, nextgate)
         else
-            # If not: add the gate to the current layer and go on.
-            push!(currentlayer, pop!(gatestack))
+            # If there are: stop adding to the layer, save it and start a new layer with
+            # this gate.
+            push!(layers, currentlayer)
+            currentlayer = [nextgate]
         end
     end
+    # When the gate stack is finally empty, the current layer is yet to be pushed.
+    push!(layers, currentlayer)
 
     return layers
 end
