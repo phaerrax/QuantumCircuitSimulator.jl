@@ -289,20 +289,6 @@ function tem_mpo(
 end
 
 """
-    havecommonelements(A, B)
-
-Return `true` if `A` and `B` have at least an element in common.
-"""
-function havecommonelements(A, B)
-    for a in A
-        if a in B
-            return true
-        end
-    end
-    return false
-end
-
-"""
     fullMPO(sites::Array{<:Index}, tensors::Vector{ITensor})
 
 Create an MPO defined on the whole `sites` list, containing the given `tensors`.
