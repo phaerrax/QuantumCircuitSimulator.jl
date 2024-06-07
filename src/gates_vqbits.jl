@@ -133,6 +133,14 @@ function gate(::GateName"rz", ::SiteType"vQubit", s::Index; cargs)
     return adjointmap_itensor("Rz", s; θ=θ)
 end
 
+function gate(::GateName"sx", st::SiteType"vQubit", s::Index)
+    return adjointmap_itensor("√X", s)
+end
+
+function gate(::GateName"sxdg", st::SiteType"vQubit", s::Index)
+    return adjointmap_itensor("√X†", s)
+end
+
 function gate(::GateName"cy", ::SiteType"vQubit", control::Index, target::Index)
     return adjointmap_itensor("CY", control, target)
 end

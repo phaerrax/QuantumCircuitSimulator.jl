@@ -163,16 +163,16 @@ function gate(::GateName"rz", ::SiteType"Qubit", s::Index; cargs)
     return ITensors.op("Rz", s; θ=θ)
 end
 
-function gate(::GateName"sx", st::SiteType"Qubit", s::Index)
-    sdg = ITensors.op(OpName("Phase"), st; ϕ=-pi / 2)
-    h = ITensors.op(OpName("H"), st)
-    return op(exp(im * pi / 4) * sdg * h * sdg, s)
+function gate(::GateName"sx", ::SiteType"Qubit", s::Index)
+    return ITensors.op("√X", s)
 end
 
-function gate(::GateName"sxdg", st::SiteType"Qubit", s::Index)
-    sdg = ITensors.op(OpName("Phase"), st; ϕ=-pi / 2)
-    h = ITensors.op(OpName("H"), st)
-    return op((exp(im * pi / 4) * sdg * h * sdg)', s)
+function ITensors.op(::OpName"√X†", st::SiteType"Qubit")
+    return ITensors.op(OpName("√X"), st)'
+end
+
+function gate(::GateName"sxdg", ::SiteType"Qubit", s::Index)
+    return ITensors.op("√X†", s)
 end
 
 function gate(::GateName"cy", ::SiteType"Qubit", control::Index, target::Index)
