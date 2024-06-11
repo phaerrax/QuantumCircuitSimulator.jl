@@ -50,9 +50,13 @@ Return the coefficient vector of `v` in the computational basis of the n-th tens
 of ``ℂ²`` with itself, with the basis ordered as Qiskit does.
 """
 function qiskitvector(v::MPS)
+    dims = dim.(siteinds(first, v))
+    allequal(dims) || error("Not all sites of the MPS have the same dimension.")
+    d = dims[1]
+
     n = length(v)
-    vec = Vector{ComplexF64}(undef, 2^n)
-    for i in 1:(2^n)
+    vec = Vector{ComplexF64}(undef, d^n)
+    for i in 1:(d^n)
         vec[i] = coefficient(v, i - 1; qiskit=true)
     end
     return vec
@@ -65,9 +69,13 @@ Return the coefficient matrix of `m` in the computational basis of the n-th tens
 of ``ℂ²`` with itself, with the basis ordered as Qiskit does.
 """
 function qiskitmatrix(m::MPO)
+    dims = dim.(siteinds(first, m))
+    allequal(dims) || error("Not all sites of the MPS have the same dimension.")
+    d = dims[1]
+
     n = length(m)
-    mat = Matrix{ComplexF64}(undef, 2^n, 2^n)
-    for i in 1:(2^n), j in 1:(2^n)
+    mat = Matrix{ComplexF64}(undef, d^n, d^n)
+    for i in 1:(d^n), j in 1:(d^n)
         mat[i, j] = coefficient(m, i - 1, j - 1; qiskit=true)
     end
     return mat
