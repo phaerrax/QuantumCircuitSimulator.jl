@@ -1,3 +1,5 @@
+using ITensors.SiteTypes: _sitetypes, commontags
+
 export gate
 
 # We cannot directly use ITensors' own "op" here for our gates since we would like to define
@@ -46,8 +48,8 @@ function gate(name::AbstractString, s::Index...; kwargs...)
     # previous versions.
     name = strip(name)
     gn = GateName(name)
-    commontags_s = ITensors.commontags(s...)
-    common_stypes = ITensors._sitetypes(commontags_s)
+    commontags_s = commontags(s...)
+    common_stypes = _sitetypes(commontags_s)
 
     # (We skip all the algebra machinery ITensors uses in its `op` function, which we
     # will not support here. A gate name is just a gate name, no operations allowed in the

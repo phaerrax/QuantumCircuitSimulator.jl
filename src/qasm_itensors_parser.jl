@@ -1,3 +1,5 @@
+using ITensors.SiteTypes: _sitetypes, commontags
+
 function qbitregisters(code::OpenQASM.Types.MainProgram)
     registers = filter(d -> d isa OpenQASM.Types.RegDecl, code.prog)
     filter!(r -> r.type.str == "qreg", registers)  # Exclude classical registers
@@ -134,7 +136,7 @@ function compose(a::ITensor, b::ITensor; apply_dag::Bool=false)
     if isempty(commoninds(a, b; plev=0))
         return a * b
     else
-        return apply(a, b; apply_dag)
+        return apply(a, b; apply_dag=apply_dag)
     end
 end
 
@@ -282,8 +284,8 @@ The given `sites` and `qmap` are checked to ensure they are compatible to the on
 would be generated from `code`.
 """
 function gates(code::OpenQASM.Types.MainProgram, sites::Vector{<:Index}, qmap)
-    commontags_s = ITensors.commontags(sites...)
-    common_stypes = ITensors._sitetypes(commontags_s)
+    commontags_s = commontags(sites...)
+    common_stypes = _sitetypes(commontags_s)
     if "Qubit" in sitetypename.(common_stypes)
         st = "Qubit"
     elseif "vQubit" in sitetypename.(common_stypes)

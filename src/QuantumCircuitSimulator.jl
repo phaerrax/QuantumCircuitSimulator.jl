@@ -1,6 +1,7 @@
 module QuantumCircuitSimulator
 
 using ITensors,
+    ITensorMPS,
     LindbladVectorizedTensors,
     JSON,
     OffsetArrays,
