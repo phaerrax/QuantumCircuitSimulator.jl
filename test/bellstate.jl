@@ -1,4 +1,56 @@
-function bell_state_from_openqasm(; atol=eps(Float64))
+using ITensors.SiteTypes: _sitetypes
+
+function ITensors.state(sn::StateName"X+", st::SiteType"vQubit")
+    v = ITensors.state(sn, SiteType("Qubit"))
+    return LindbladVectorizedTensors.vec(kron(v, v'), LindbladVectorizedTensors.ptmbasis(1))
+end
+
+function ITensors.op(::OpName"Bell2Entangler", st::SiteType"Qubit")
+    sigma_x = ITensors.op(OpName("X"), st)
+    id = ITensors.op(OpName("Id"), st)
+    return (1 / sqrt(2)) .* (kron(sigma_x, id) + kron(id, sigma_x))
+end
+
+bellstate(::SiteType, sites) = nothing
+
+function bellstate(sites)
+    common_stypes = _sitetypes(ITensors.commontags(sites...))
+    for st in common_stypes
+        v = bellstate(st, sites)
+        !isnothing(v) && return v
+    end
+    return throw(
+        ArgumentError(
+            "Overload of \"kicked_ising_gate_seq\" function not found for " *
+            "Index tags $(ITensors.tags.(sites))",
+        ),
+    )
+end
+
+function bellstate(::SiteType"Qubit", sites)
+    N = length(sites)
+    v = MPS(sites, [j == 1 ? "X+" : "0" for j in 1:N])
+    # Apply the "Bell entangler" gate pair by pair to create the initial state.
+    for j in 2:2:N
+        v = apply(op("Bell2Entangler", sites, j, j + 1), v)
+    end
+    return v
+end
+
+function bellstate(::SiteType"vQubit", sites)
+    N = length(sites)
+    v = MPS(sites, [j == 1 ? "X+" : "0" for j in 1:N])
+    # Apply the "Bell entangler" gate pair by pair to create the initial state.
+    for j in 2:2:N
+        entangler = LindbladVectorizedTensors.adjointmap_itensor(
+            "Bell2Entangler", sites, j, j + 1
+        )
+        v = apply(entangler, v)
+    end
+    return v
+end
+
+function bellstate_openqasm(; atol=eps(Float64))
     init0 = """OPENQASM 2.0;
 include "qelib1.inc";
 qreg q[37];
@@ -322,18 +374,11 @@ x q[1];"""
         openqasm_plusbell = apply(g, openqasm_plusbell)
     end
 
-    itensor_plusbell = MPS(sites, [j == 1 ? "X+" : "0" for j in 1:nsites])
-    # Apply the "Bell entangler" gate pair by pair to create the initial state.
-    for j in 2:2:nsites
-        entangler =
-            1 / sqrt(2) * (
-                op("X", sites, j) * op("Id", sites, j + 1) +
-                op("Id", sites, j) * op("X", sites, j + 1)
-            )
-        itensor_plusbell = apply(entangler, itensor_plusbell)
-    end
+    itensor_plusbell = bellstate(sites)
 
     p_itensor = projector(itensor_plusbell)
     p_openqasm = projector(openqasm_plusbell)
     return norm(p_itensor - p_openqasm) < atol
 end
+
+function entangle_bellstate() end

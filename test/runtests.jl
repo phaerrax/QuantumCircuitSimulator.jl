@@ -1,5 +1,5 @@
 using QuantumCircuitSimulator
-using ITensors, LindbladVectorizedTensors
+using ITensors, ITensorMPS, LindbladVectorizedTensors
 using OpenQASM
 using Conda, PyCall, Pkg
 using Test
@@ -29,8 +29,8 @@ include("add_gate_from_file.jl")
     @test add_gate_from_file()
 end
 
-include("bell_state_from_openqasm.jl")
+include("bellstate.jl")
 
 @testset "Build Bell state from complicated OpenQASM circuit" begin
-    @test bell_state_from_openqasm(; atol=1e-12)
+    @test bellstate_openqasm(; atol=1e-12)
 end
