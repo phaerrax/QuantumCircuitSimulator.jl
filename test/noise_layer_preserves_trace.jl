@@ -16,5 +16,5 @@ function noise_layer_preserves_trace(; N=50)
 
     x = random_mps(sites; linkdims=2)
 
-    return dot(vid, x) ≈ dot(vid, apply(𝒩, x))
+    return isapprox(dot(vid, x), dot(vid, apply(𝒩, x)))
 end

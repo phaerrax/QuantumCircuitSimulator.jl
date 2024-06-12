@@ -50,7 +50,7 @@ function bellstate(::SiteType"vQubit", sites)
     return v
 end
 
-function bellstate_openqasm(; atol=eps(Float64))
+function bellstate_openqasm()
     init0 = """OPENQASM 2.0;
 include "qelib1.inc";
 qreg q[37];
@@ -378,5 +378,5 @@ x q[1];"""
 
     p_itensor = projector(itensor_plusbell)
     p_openqasm = projector(openqasm_plusbell)
-    return norm(p_itensor - p_openqasm) < atol
+    return isapprox(p_itensor, p_openqasm)
 end

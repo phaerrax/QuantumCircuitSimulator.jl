@@ -11,26 +11,34 @@ function gateadjoints()
 
     for sites in [sq, svq]
         g = gate("cp", sites, 1, 2; cargs=(pi * rand()))
-        push!(tests, apply(g, gateadjoint(g)) ≈ op("Id", sites, 1) * op("Id", sites, 2))
+        push!(
+            tests,
+            isapprox(apply(g, gateadjoint(g)), op("Id", sites, 1) * op("Id", sites, 2)),
+        )
         g = gate("c3x", sites, 2, 3, 4, 5)
         push!(
             tests,
-            apply(g, gateadjoint(g)) ≈
-            op("Id", sites, 2) *
-            op("Id", sites, 3) *
-            op("Id", sites, 4) *
-            op("Id", sites, 5),
+            isapprox(
+                apply(g, gateadjoint(g)),
+                op("Id", sites, 2) *
+                op("Id", sites, 3) *
+                op("Id", sites, 4) *
+                op("Id", sites, 5),
+            ),
         )
         g = gate("sxdg", sites, 3)
-        push!(tests, apply(g, gateadjoint(g)) ≈ op("Id", sites, 3))
+        push!(tests, isapprox(apply(g, gateadjoint(g)), op("Id", sites, 3)))
         g = gate("crz", sites, 1, 2; cargs=(pi * rand()))
-        push!(tests, apply(g, gateadjoint(g)) ≈ op("Id", sites, 1) * op("Id", sites, 2))
+        push!(
+            tests,
+            isapprox(apply(g, gateadjoint(g)), op("Id", sites, 1) * op("Id", sites, 2)),
+        )
     end
 
     return all(tests)
 end
 
-function gates_vqubit(; atol=1e-14)
+function gates_vqubit()
     tests = Bool[]
     # Here we test that the vQubit version of some gates act correctly.
     # H|0⟩ = 1/√2 (|0⟩ + |1⟩)
@@ -44,20 +52,20 @@ function gates_vqubit(; atol=1e-14)
     Hv0_vec = apply(gate("h", sites_vec, 1), v0_vec)  # this is H|0⟩⟨0|H*
     push!(
         tests,
-        norm(
-            Hv0_vec -
+        isapprox(
+            Hv0_vec,
             vec_purestate_densitymatrix(SiteType("Qubit"), Hv0; existing_sites=sites_vec),
-        ) < atol,
+        ),
     )
 
     CXv0 = apply(gate("cx", sites, 2, 1), v0)
     CXv0_vec = apply(gate("cx", sites_vec, 2, 1), v0_vec)  # this is CX|0⟩⟨0|CX*
     push!(
         tests,
-        norm(
-            CXv0_vec -
+        isapprox(
+            CXv0_vec,
             vec_purestate_densitymatrix(SiteType("Qubit"), CXv0; existing_sites=sites_vec),
-        ) < atol,
+        ),
     )
 
     return all(tests)
