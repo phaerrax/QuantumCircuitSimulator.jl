@@ -380,5 +380,3 @@ x q[1];"""
     p_openqasm = projector(openqasm_plusbell)
     return norm(p_itensor - p_openqasm) < atol
 end
-
-function entangle_bellstate() end

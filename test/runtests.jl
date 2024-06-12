@@ -34,3 +34,11 @@ include("bellstate.jl")
 @testset "Build Bell state from complicated OpenQASM circuit" begin
     @test bellstate_openqasm(; atol=1e-12)
 end
+
+include("gates.jl")
+
+@testset "Gate adjoints and Qubit/vQubit equivalence" begin
+    @test gateadjoints()
+    @test gates_vqubit()
+    @test ecr_vqubit()
+end
