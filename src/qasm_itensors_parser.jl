@@ -1,11 +1,5 @@
 using ITensors.SiteTypes: _sitetypes, commontags
 
-function qbitregisters(code::OpenQASM.Types.MainProgram)
-    registers = filter(d -> d isa OpenQASM.Types.RegDecl, code.prog)
-    filter!(r -> r.type.str == "qreg", registers)  # Exclude classical registers
-    return [(r.name.str, parse(Int, r.size.str)) for r in registers]
-end
-
 """
     qbitsites(code::OpenQASM.Types.MainProgram, st::AbstractString)
 
@@ -15,68 +9,28 @@ defined in the given code.
 # Example
 
 ```julia-repl
-julia> code = OpenQASM.parse("qreg a[3];\nqreg b[2];");
+julia> code = OpenQASM.parse("OPENQASM 2.0;\nqreg a[3];\nqreg b[2];");
 
 julia> qbitsites(code, "Qubit")
 5-element Vector{ITensors.Index{Int64}}:
- (dim=2|id=187|"Qubit,Site,a,n=1")
- (dim=2|id=539|"Qubit,Site,a,n=2")
- (dim=2|id=321|"Qubit,Site,a,n=3")
- (dim=2|id=981|"Qubit,Site,b,n=1")
- (dim=2|id=596|"Qubit,Site,b,n=2")
+ (dim=2|id=187|"Qubit,Site,a[0]")
+ (dim=2|id=539|"Qubit,Site,a[1]")
+ (dim=2|id=321|"Qubit,Site,a[2]")
+ (dim=2|id=981|"Qubit,Site,b[0]")
+ (dim=2|id=596|"Qubit,Site,b[2]")
 ```
 """
 function qbitsites(code::OpenQASM.Types.MainProgram, st::AbstractString)
-    return [
-        [siteinds(st, n; addtags=id) for (id, n) in qbitregisters(code)]...;
-    ]
-end
+    registers = filter(d -> d isa OpenQASM.Types.RegDecl, code.prog)
+    filter!(r -> r.type.str == "qreg", registers)  # Exclude classical registers
 
-"""
-    qbitmap(code::OpenQASM.Types.MainProgram)
-
-Return a map that associates the quantum bit as written in the given
-code to the relative ITensor site.
-
-# Example
-
-```julia-repl
-julia> code = OpenQASM.parse("qreg a[3];\nqreg b[2];");
-
-julia> qbitmap(code)
-Dict{String, Int64} with 5 entries:
-  "a[0]" => 1
-  "a[1]" => 2
-  "a[2]" => 3
-  "b[0]" => 4
-  "b[1]" => 5
-```
-"""
-function qbitmap(code::OpenQASM.Types.MainProgram)
-    # Example: with the instructions
-    #   qreg a[3];
-    #   qreg b[2];
-    # Qiskit creates the sites a[0] a[1] a[2] b[0] b[1].
-    # When `qbitregisters` is called on this code, it returns
-    #   [("a", 3), ("b", 2)]
-    #
-    # This function creates a dictionary mapping Qiskit's qbit labels to a series of
-    # integers, which will be the positions of each qbit in the ITensors' vector of
-    # Index objects:
-    #   a[0] --> 1
-    #   a[1] --> 2
-    #   a[2] --> 3
-    #   b[0] --> 4
-    #   b[1] --> 5
-    registers = qbitregisters(code)
-    ids = []
-    for (name, len) in registers
-        for k in 0:(len - 1)
-            push!(ids, "$name[$k]")
-        end
-    end
-    # Now the map is given by the association ids[k] => k
-    return Dict(ids[k] => k for k in 1:length(ids))
+    sites = ITensors.Index[]
+    for reg in registers
+        regname = reg.name.str
+        reglength = parse(Int, reg.size.str)
+        append!(sites, [siteind(st; addtags=regname*"[$n]") for n in 0:reglength-1])
+       end
+       return sites
 end
 
 function qasmstring(args::Tuple)
@@ -101,21 +55,26 @@ function qasmstring(arg::OpenQASM.Types.Neg)
     return "-" * arg.val.str
 end
 
-function parsegate(sites::Vector{<:Index}, sitemap, instr::OpenQASM.Types.Instruction)
+function parsegate(sites::Vector{<:Index}, instr::OpenQASM.Types.Instruction)
     # OpenQASM.Types.Instruction fields:
     # * name: gate name
     # * cargs: numerical parameters
     # * qargs: qbits the gate acts on
 
     qbit_list = string.(instr.qargs)  # This will be something like ["q[1]", "q[4]"]
-    qbit_inds = [sitemap[n] for n in qbit_list]
-    # `qbit_inds` contains the indices, of the `sites` list, that we need to consider.
+    qbit_inds = [getfirst(i -> hastags(i, name), sites) for name in qbit_list]
+    # `qbit_inds` contains the Index objects in the `sites` list that we need to consider.
+    # delete this...
+    # It does _not_ contain Index objects! Altough we could write this function in an
+    # equivalent way by using `getfirst` instead of `findfirst`, which would give us the
+    # actual elements of the `sites` list corresponding to the indices from `findfirst`
+    # (i.e. the Index objects) and then 
 
     parameters = @. eval(Meta.parse(qasmstring(instr.cargs)))
     if isempty(parameters)
-        g = invokelatest(gate, instr.name, sites, qbit_inds...)
+        g = invokelatest(gate, instr.name, qbit_inds...)
     else
-        g = invokelatest(gate, instr.name, sites, qbit_inds...; cargs=parameters)
+        g = invokelatest(gate, instr.name, qbit_inds...; cargs=parameters)
     end
     # Why `invokelatest`? The `parsegate` function is called repeatedly within `gates`; if
     # the currently parsed line is a gate declaration, then a new method is added to the
@@ -233,12 +192,10 @@ end
     gates(code::OpenQASM.Types.MainProgram, st::AbstractString)
 
 Create a list of gates (ITensor operators) as parsed from the given OpenQASM `code`,
-returning a triple `(s, qmap, gates)` where:
+returning a triple `(s, ops)` where:
 
 * `s` is a list of ITensor indices of SiteType `st`, one for each qbit declared in the
 given code,
-* `qmap` is a dictionary mapping each qbit label in the OpenQASM code (i.e. "q[0]", "q[1]"
-and so on) to the associated ITensor site Index,
 * `ops` is a list of ITensor operators, one for each gate, in order.
 
 # Example
@@ -260,30 +217,28 @@ NDTensors.Dense{Float64, Vector{Float64}}
 """
 function gates(code::OpenQASM.Types.MainProgram, st::AbstractString)
     sites = qbitsites(code, st)
-    qmap = qbitmap(code)
 
-    gates = ITensor[]
+    gatelist = ITensor[]
     for line in code.prog
         if line isa OpenQASM.Types.Instruction
-            push!(gates, parsegate(sites, qmap, line))
+            push!(gatelist, parsegate(sites, line))
         elseif line isa OpenQASM.Types.Gate
             new_gate_method = definition(line, SiteType(st))
             eval(Meta.parse(new_gate_method))
         end
     end
-    return sites, qmap, gates
+    return sites, gatelist
 end
 
 """
-    gates(code::OpenQASM.Types.MainProgram, sites::Vector{<:Index}, qmap)
+    gates(code::OpenQASM.Types.MainProgram, sites::Vector{<:Index})
 
 Return a list of gates (ITensor operators) as parsed from the given OpenQASM `code`,
-building the operators on the `sites` Index objects and using `qbitmap` to translate
-OpenQASM qbit positions to the ITensor sites.
-The given `sites` and `qmap` are checked to ensure they are compatible to the ones that
+building the operators on the already existing Index objects in `sites`.
+The given `sites` are checked to ensure they are compatible to the ones that
 would be generated from `code`.
 """
-function gates(code::OpenQASM.Types.MainProgram, sites::Vector{<:Index}, qmap)
+function gates(code::OpenQASM.Types.MainProgram, sites::Vector{<:Index})
     commontags_s = commontags(sites...)
     common_stypes = _sitetypes(commontags_s)
     if "Qubit" in sitetypename.(common_stypes)
@@ -295,15 +250,14 @@ function gates(code::OpenQASM.Types.MainProgram, sites::Vector{<:Index}, qmap)
     end
 
     newsites = qbitsites(code, st)
-    newqmap = qbitmap(code)
-    if (length(newsites) != length(sites)) || (newqmap != qmap)
+    if length(newsites) != length(sites)
         error("Sites not compatible with input OpenQASM code.")
     end
 
     gates = ITensor[]
     for line in code.prog
         if line isa OpenQASM.Types.Instruction
-            push!(gates, parsegate(sites, qmap, line))
+            push!(gates, parsegate(sites, line))
         elseif line isa OpenQASM.Types.Gate
             new_gate_method = definition(line, SiteType(st))
             eval(Meta.parse(new_gate_method))

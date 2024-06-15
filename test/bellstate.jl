@@ -365,10 +365,10 @@ x q[11];
 x q[9];
 x q[5];
 x q[1];"""
-    sites, qmap, g0 = gates(OpenQASM.parse(init0), "Qubit")
+    sites, g0 = gates(OpenQASM.parse(init0), "Qubit")
     nsites = length(sites)
-    g1 = gates(OpenQASM.parse(init1_ecr), sites, qmap)
-    g2 = gates(OpenQASM.parse(init2), sites, qmap)
+    g1 = gates(OpenQASM.parse(init1_ecr), sites)
+    g2 = gates(OpenQASM.parse(init2), sites)
     openqasm_plusbell = MPS(sites, "0")
     for g in [g0; g1; g2]
         openqasm_plusbell = apply(g, openqasm_plusbell)

@@ -82,7 +82,7 @@ function ecr_vqubit()
   ecr q[0],q[1];
   ecr q[2],q[3];
   ecr q[1],q[2];"""
-    s, _, gs = gates(OpenQASM.parse(ecr_txt), "Qubit")
+    s, gs = gates(OpenQASM.parse(ecr_txt), "Qubit")
     v = MPS(s, "0")
     for g in gs
         v = apply(g, v)
@@ -92,7 +92,7 @@ function ecr_vqubit()
     append!(expvals_qubit, expect(v, "Y"))
     append!(expvals_qubit, expect(v, "Z"))
 
-    s, _, gs = gates(OpenQASM.parse(ecr_txt), "vQubit")
+    s, gs = gates(OpenQASM.parse(ecr_txt), "vQubit")
     v = MPS(s, "0")
     for g in gs
         v = apply(g, v)

@@ -86,7 +86,7 @@ function replicateqiskit(qiskitcircuit::Function)
     qiskitmatrix = complex.(qiskitmatrix_re, qiskitmatrix_im)
 
     # Now we read the OpenQASM file and build the circuit with our library.
-    sites, _, gatelist = open(qasmfile_path, "r") do f
+    sites, gatelist = open(qasmfile_path, "r") do f
         code = OpenQASM.parse(read(f, String))
         gates(code, "Qubit")
     end
