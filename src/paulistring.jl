@@ -1,4 +1,7 @@
-import ITensors: op
+using ITensors.SiteTypes: _sitetypes, commontags
+using LindbladVectorizedTensors: vop
+
+import ITensorMPS: MPS
 
 isvalidpauliint(i::Integer) = 0 <= i <= 3
 
@@ -136,4 +139,64 @@ function ITensors.op(sites::Vector{<:Index}, p::PauliString)
         x *= op(sites, s, i)
     end
     return x
+end
+
+ITensorMPS.MPS(::SiteType, sites::Vector{<:Index}, p::PauliString) = nothing
+ITensorMPS.MPO(::SiteType, sites::Vector{<:Index}, p::PauliString) = nothing
+
+"""
+    MPS(sites::Vector{<:Index}, p::PauliString)
+
+Return an MPS corresponding to the Pauli string `p` on the site indices `sites`.
+"""
+function ITensorMPS.MPS(sites::Vector{<:Index}, p::PauliString)
+    length(p) != length(sites) && "Lengths of Pauli string and Index vector differ."
+    commontags_s = commontags(sites...)
+    common_stypes = _sitetypes(commontags_s)
+    for st in common_stypes
+        res = ITensorMPS.MPS(st, sites, p)
+        !isnothing(res) && return res
+    end
+
+    return throw(
+        ArgumentError(
+            "Overload of \"MPS\" function not found for gate name \"$name\" and Index " *
+            "tags: $(tags.(sites)).",
+        ),
+    )
+end
+
+"""
+    MPO(sites::Vector{<:Index}, p::PauliString)
+
+Return an MPO corresponding to the Pauli string `p` on the site indices `sites`.
+"""
+function ITensorMPS.MPO(sites::Vector{<:Index}, p::PauliString)
+    length(p) != length(sites) && "Lengths of Pauli string and Index vector differ."
+    commontags_s = commontags(sites...)
+    common_stypes = _sitetypes(commontags_s)
+    for st in common_stypes
+        res = ITensorMPS.MPO(st, sites, p)
+        !isnothing(res) && return res
+    end
+
+    return throw(
+        ArgumentError(
+            "Overload of \"MPO\" function not found for gate name \"$name\" and Index " *
+            "tags: $(tags.(sites)).",
+        ),
+    )
+end
+
+function ITensorMPS.MPS(::SiteType"vQubit", sites::Vector{<:Index}, p::PauliString)
+    statenames = string.(pauli_inttochar.(p.string))
+    statenames = replace.(statenames, "I" => "Id")
+    vstatenames = ["v$sn" for sn in statenames]
+    return MPS(sites, vstatenames)
+end
+
+function ITensorMPS.MPO(::SiteType"Qubit", sites::Vector{<:Index}, p::PauliString)
+    opnames = string.(pauli_inttochar.(p.string))
+    opnames = replace.(opnames, "I" => "Id")
+    return MPO(ComplexF64, sites, opnames)
 end

@@ -28,9 +28,9 @@ function qbitsites(code::OpenQASM.Types.MainProgram, st::AbstractString)
     for reg in registers
         regname = reg.name.str
         reglength = parse(Int, reg.size.str)
-        append!(sites, [siteind(st; addtags=regname*"[$n]") for n in 0:reglength-1])
-       end
-       return sites
+        append!(sites, [siteind(st; addtags=regname * "[$n]") for n in 0:(reglength - 1)])
+    end
+    return sites
 end
 
 function qasmstring(args::Tuple)
