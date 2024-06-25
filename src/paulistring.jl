@@ -65,17 +65,15 @@ end
 
 function PauliString(str::AbstractString)
     ints = Vector{Int8}(undef, length(str))
-    reversed_str = reverse(str)
-    for i in eachindex(reversed_str)
-        ints[i] = pauli_chartoint(reversed_str[i])
+    for i in eachindex(str)
+        ints[i] = pauli_chartoint(str[i])
     end
     return PauliString(ints)
 end
 
 # Overload common methods for PauliStrings
 
-# We reverse the Pauli string (when printing it) to comply with Qiskit's convention
-Base.string(p::PauliString) = join(pauli_inttochar.(reverse(p.string)))
+Base.string(p::PauliString) = join(pauli_inttochar.(p.string))
 Base.length(p::PauliString) = length(p.string)
 Base.show(p::PauliString) = show(string(p))
 Base.print(p::PauliString) = print(string(p))
