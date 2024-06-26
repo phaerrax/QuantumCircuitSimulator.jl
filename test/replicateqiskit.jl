@@ -105,13 +105,14 @@ end
 
 function paulistringordering(str::AbstractString)
     pstr = PauliString(str)
+    qiskit_pstr = reverse(PauliString(str))  # We don't reverse the strings as Qiskit does
     N = length(pstr)
 
     qr = qiskit.QuantumRegister(N, "q")
     qc = qiskit.QuantumCircuit(qr)
 
     # Load the Pauli string in a Qiskit operator, and apply to a zero initial state.
-    gate = clib.PauliGate(string(pstr))
+    gate = clib.PauliGate(string(qiskit_pstr))
     qc.append(gate, 0:(N - 1))
     finalstate_qiskit_pyobj = qi.Statevector.from_instruction(qc)
     finalstate_qiskit = @. np.real(finalstate_qiskit_pyobj.data) +
