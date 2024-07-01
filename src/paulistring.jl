@@ -91,6 +91,27 @@ Base.isequal(p::PauliString, q::PauliString) = isequal(p.string, q.string)
 Base.reverse(p::PauliString) = PauliString(reverse(p.string))
 
 """
+    istrivial(p::PauliString)
+
+Return `true` if all factors of `p` are the identity.
+"""
+istrivial(p::PauliString) = all(==(pauli_chartoint('I')), p.string)
+
+"""
+    crop(p::PauliString, range)
+
+Return a subset of the Pauli string `p` containing only the factors whose index is in
+`range` (which must be sorted).
+"""
+function crop(p::PauliString, range)
+    # Sanity checks
+    !issorted(range) && error("Range $range is not sorted")
+    !issubset(range, eachindex(p.string)) && error("Range $range out of bounds")
+
+    return PauliString(p.string[range])
+end
+
+"""
     indices(p::PauliString)
 
 Return the site indices of non-trivial factors in `p`.

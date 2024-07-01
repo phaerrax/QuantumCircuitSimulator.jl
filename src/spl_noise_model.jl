@@ -22,6 +22,23 @@ function nqbits(model::SPLNoiseModel)
     return isempty(model) ? 0 : length(first(keys(model.parameters)))
 end
 
+"""
+    crop(model::SPLNoiseModel, range)
+
+Return a subset of `model` keeping only the Pauli strings whose non-trivial factors lie
+completely within `range`.
+"""
+function crop(model::SPLNoiseModel, range)
+    cropped = Dict{PauliString,Real}()
+    for (p, v) in model.parameters
+        nontrivialinds = findall(!=(QuantumCircuitSimulator.pauli_chartoint('I')), p.string)
+        if issubset(nontrivialinds, range)
+            push!(cropped, crop(p, range) => v)
+        end
+    end
+    return SPLNoiseModel(cropped)
+end
+
 function SPLNoiseModel(file::AbstractString)
     dict = JSON.parsefile(file)
     return SPLNoiseModel(Dict(PauliString(str) => coeff for (str, coeff) in dict))
