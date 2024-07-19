@@ -242,7 +242,7 @@ Note that the MPS of a Pauli string is not normalized in the Hilbert-Schmidt inn
 product ``⟨A,B⟩ = tr(A† B)``: the norm of a Pauli string of length `N` is ``2^(N/2)``.
 """
 function samplepaulistrings(v::MPS, nsamples::Integer)
-    if any(t -> !(SiteType("vQubit") in t), _sitetypes.(siteinds(x)))
+    if any(t -> !(SiteType("vQubit") in t), _sitetypes.(siteinds(v)))
         error("samplepaulistrings works for vQubit site types only.")
     end
 
@@ -271,7 +271,47 @@ function samplepaulistrings(v::MPS, nsamples::Integer)
     #   v = ∑ₖ cₖσₖ
     #   ⟨eⱼ, v⟩ = ∑ₖ cₖ⟨eⱼ,σₖ⟩ = 2^(N/2) ∑ₖ cₖ⟨eⱼ,eₖ⟩ =  2^(N/2) cⱼ
     # therefore cₖ = 2^(-N/2) ⟨eₖ, v⟩ = 2^(-N) ⟨σₖ, v⟩.
-    normf = 2^length(sites)
-    overlaps = [dot(MPS(sites, p), v) / normf for p in ps]  # FIXME cache the contractions
+    normf = 2^(length(sites) / 2)
+    overlaps = Vector{ComplexF64}(undef, nsamples)
+    for i in 1:nsamples
+        overlaps[i] = _contractPTM(ps[i], v) / normf
+    end
+
     return ps, overlaps
+end
+
+function _contractPTM(p::PauliString, v::MPS)
+    # Note that this function does not return the inner product of the Pauli string and v.
+    # In fact it computes the inner product of the e_{p_1,..., p_N} element of the PTM
+    # basis with v, where N = length(v), and e_{p_1,..., p_N} == 2^(-N/2) * p.
+    c = ITensors.OneITensor()
+    for n in 1:length(v)
+        c *= _contract(onehot(siteind(v, n) => p.string[n] + 1), v[n])
+    end
+    return scalar(c)
+end
+
+@memoize function _contract(x::ITensor, y::ITensor)
+    # This tiny little function is here just so that we can memoize the calculations.
+    #
+    # Note: @memoize by default compares arguments by using the hash function `objectid`.
+    # If a primitive type (?) is supplied directly (without first binding it to a variable)
+    # then the object id is the same; with composite types this might not happen.
+    # For example, if we have a memoized function `f` of a single variable, then repeated
+    # calls to f(4) will use the cached value, but f([1, 2, 3]) won't, since [1, 2, 3] is
+    # treated as a new variable each time. We should keep that in mind.
+    # Anyway, the `shotmeasurement` function is called with the same `shotduals` and
+    # `observable` objects each time (each one bound to a variable) so it should be fine.
+
+    # Some stats from @btime:
+    #   ⋅ ps = vector of 50 Pauli strings
+    #   ⋅ s = siteinds("vQubit", 50)
+    #   ⋅ v = random_mps(s; linkdims=10)
+    #
+    # @btime foreach(p -> dot(MPS(s, p), v), ps)
+    #   216.343 ms (970371 allocations: 233.83 MiB)
+    #
+    # @btime foreach(p -> QuantumCircuitSimulator.contractpauli(p, v), ps)
+    #   30.246 ms (209801 allocations: 36.17 MiB)
+    return x * y
 end

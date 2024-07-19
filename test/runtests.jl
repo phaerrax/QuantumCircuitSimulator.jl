@@ -42,3 +42,9 @@ include("gates.jl")
     @test gates_vqubit()
     @test ecr_vqubit()
 end
+
+include("pauli_sampling.jl")
+
+@testset "Sampling of Pauli strings from MPS" begin
+    @test pauli_sampling()
+end

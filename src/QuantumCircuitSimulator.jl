@@ -8,7 +8,8 @@ using ITensors,
     LinearAlgebra,
     RBNF,
     OpenQASM,
-    DataStructures
+    DataStructures,
+    Memoize
 
 include("utils.jl")
 
