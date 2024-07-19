@@ -51,6 +51,8 @@ function noise_ptm_generators(model::SPLNoiseModel)
     mat = [zeros(Float64, 3, 3) for _ in 1:(N - 1)]
     for (k, v) in model.parameters
         if order(k) == 1
+            # indices(k): index of non-trivial factors in Pauli string
+            # operators(k): non-trivial factors in Pauli string
             vec[first(indices(k))][operators(k)...] = v
         elseif order(k) == 2
             mat[first(indices(k))][operators(k)...] = v

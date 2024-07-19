@@ -97,8 +97,8 @@ function replicateqiskit(qiskitcircuit::Function)
         state = apply(g, state)
         op = apply(g, op)
     end
-    cbvec = QuantumCircuitSimulator.qiskitvector(state)
-    cbmat = QuantumCircuitSimulator.qiskitmatrix(op)
+    cbvec = QuantumCircuitSimulator.fullvector(state; qiskit=false)
+    cbmat = QuantumCircuitSimulator.fullmatrix(op; qiskit=false)
 
     return isapprox(cbvec, qiskitstate) && isapprox(cbmat, qiskitmatrix)
 end
@@ -128,6 +128,7 @@ function paulistringordering(str::AbstractString)
 
     # Check if the final state is the same as Qiskit's.
     return isapprox(
-        finalstate_qiskit, QuantumCircuitSimulator.qiskitvector(finalstate_itensors)
+        finalstate_qiskit,
+        QuantumCircuitSimulator.fullvector(finalstate_itensors; qiskit=false),
     )
 end
