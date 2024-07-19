@@ -16,7 +16,7 @@ export gate, GateName, @GateName_str
 include("gatename.jl")
 include("gate.jl")
 
-export PauliString, indices, operators, order, SPLNoiseModel, nqbits
+export PauliString, indices, operators, order, SPLNoiseModel, nqbits, samplepaulistrings
 include("paulistring.jl")
 
 #include("qelib1_gates_2.0.jl")
