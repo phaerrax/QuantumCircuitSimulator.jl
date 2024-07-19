@@ -86,8 +86,18 @@ function Base.setindex!(p::PauliString, c::Integer, i::Integer)
     end
 end
 Base.setindex!(p::PauliString, c::Char, i::Integer) = setindex!(p, pauli_chartoint(c), i)
+
 Base.isless(p::PauliString, q::PauliString) = isless(p.string, q.string)
+
+# - Equality testing -
+# Since our Pauli strings are just arrays of integers, we fall back to the existing
+# implementations for that type.
 Base.isequal(p::PauliString, q::PauliString) = isequal(p.string, q.string)
+# We need to implement the `hash` function as well, otherwise functions such as `unique`
+# will not work.
+Base.:(==)(p::PauliString, q::PauliString) = p.string == q.string
+Base.hash(p::PauliString, h::UInt) = hash(p.string, h)
+
 Base.reverse(p::PauliString) = PauliString(reverse(p.string))
 
 """
