@@ -18,9 +18,11 @@ include("replicateqiskit.jl")
 end
 
 include("noise_layer_preserves_trace.jl")
+include("spl_noise_truncation.jl")
 
 @testset "Noise layer construction" begin
     @test noise_layer_preserves_trace(; N=20)
+    @test spl_noise_truncation()
 end
 
 include("add_gate_from_file.jl")
