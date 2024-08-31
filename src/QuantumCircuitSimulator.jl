@@ -28,7 +28,7 @@ include("gates_vqbits.jl")
 export compose, gates, gatelayers
 include("qasm_itensors_parser.jl")
 
-export noiselayer, inversenoiselayer, crop
+export qbitsites, noiselayer, inversenoiselayer, crop
 include("spl_noise_model.jl")
 
 end

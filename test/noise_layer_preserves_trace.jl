@@ -12,7 +12,7 @@ function noise_layer_preserves_trace(; N=50)
     sites = siteinds("vQubit", N)
     vid = MPS(sites, "vId")
 
-    𝒩 = noiselayer(sites, v, m)
+    𝒩 = noiselayer(sites, 1:length(sites), v, m)
 
     x = randomMPS(sites; linkdims=2)
 
