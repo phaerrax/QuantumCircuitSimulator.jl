@@ -50,3 +50,9 @@ include("pauli_sampling.jl")
 @testset "Sampling of Pauli strings from MPS" begin
     @test pauli_sampling()
 end
+
+include("pauli_string_constructors.jl")
+
+@testset "Consistency of Pauli string constructors" begin
+    @test pauli_string_constructors()
+end

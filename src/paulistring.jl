@@ -63,6 +63,35 @@ function PauliString(L::Integer, ts::Tuple{Char,Integer}...)
     return PauliString(str)
 end
 
+"""
+    PauliString(L::Integer, str::AbstractString)
+
+Return a PauliString of length `L`, with Pauli operators specified in `str` as a sequence
+of letters and numbers.
+
+# Example
+
+```julia-repl
+julia> p = PauliString(8, "X3Y4Z6")
+PauliString(Int8[0, 0, 1, 2, 0, 3, 0, 0])
+
+julia> show(p)
+"IIXYIZII"
+```
+"""
+function PauliString(L::Integer, str::AbstractString)
+    if length(str) > L
+        error("String does not fit in the given length.")
+    end
+    idx = first.(findall(r"[XYZI]", str))
+    factors = [
+        [str[idx[i]:(idx[i + 1] - 1)] for i in 1:(length(idx) - 1)]
+        str[idx[end]:end]
+    ]
+    @assert *(factors...) == str
+    return PauliString(L, [(first(f), parse(Int, f[2:end])) for f in factors]...)
+end
+
 function PauliString(str::AbstractString)
     ints = Vector{Int8}(undef, length(str))
     for i in eachindex(str)
