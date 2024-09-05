@@ -56,6 +56,16 @@ julia> show(p)
 ```
 """
 function PauliString(L::Integer, ts::Tuple{Char,Integer}...)
+    # String sanity check:
+    # 1) all numbers shall be between 1 and L (inclusive)
+    if !all(1 .<= last.(ts) .<= L)
+        error("Some Pauli operators do not fit in the given length.")
+    end
+    # 2) no char shall be repeated
+    if !allunique(last.(ts))
+        error("Repeated Pauli operators.")
+    end
+
     str = repeat([0], L)
     for t in ts
         str[t[2]] = pauli_chartoint(t[1])
@@ -80,9 +90,6 @@ julia> show(p)
 ```
 """
 function PauliString(L::Integer, str::AbstractString)
-    if length(str) > L
-        error("String does not fit in the given length.")
-    end
     idx = first.(findall(r"[XYZI]", str))
     factors = [
         [str[idx[i]:(idx[i + 1] - 1)] for i in 1:(length(idx) - 1)]
