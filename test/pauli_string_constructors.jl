@@ -1,12 +1,12 @@
 function pauli_string_constructors()
     # Test that the different PauliString constructors give the same result.
     len = 100
-    chars = unique(sort(rand(['I', 'X', 'Y', 'Z'], 10)))
-    nfactors = length(chars)
-    positions = rand(1:100, nfactors)
+    nfactors = 10
+    chars = rand(['X', 'Y', 'Z'], nfactors)
+    positions = unique(sort(rand(1:100, nfactors)))
 
     # Compact form
-    str1 = reduce(*, collect(Iterators.flatten(zip(chars, string.(positions)))))
+    str1 = join(Iterators.flatten(zip(chars, string.(positions))))
 
     # Full form
     str2_factors = repeat(['I'], len)
