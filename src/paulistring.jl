@@ -109,10 +109,8 @@ end
 
 # Overload common methods for PauliStrings
 
-Base.string(p::PauliString) = join(pauli_inttochar.(p.string))
 Base.length(p::PauliString) = length(p.string)
-Base.show(p::PauliString) = show(string(p))
-Base.print(p::PauliString) = print(string(p))
+
 Base.getindex(p::PauliString, i::Integer) = getindex(p.string, i)
 function Base.setindex!(p::PauliString, c::Integer, i::Integer)
     if isvalidpaulichar(c)
@@ -191,6 +189,39 @@ Return a list containing the non-trivial factors in `p` (ordered).
 function operators(p::PauliString)
     return filter(!=(0), p.string)
 end
+
+# Pretty-printing methods
+
+"""
+    compactstring(p::PauliString)
+
+Return the Pauli string in compact form, i.e. written as a sequence of its non-trivial
+operators and their position.
+
+# Example
+
+```julia-repl
+julia> p = PauliString(8, "X3Y4Z6")
+PauliString(Int8[0, 0, 1, 2, 0, 3, 0, 0])
+
+julia> show(p)
+"IIXYIZII"
+
+julia> compactstring(p)
+"X3Y4Z6"
+```
+"""
+function compactstring(p::PauliString)
+    return join(Iterators.flatten(zip(pauli_inttochar.(operators(p)), indices(p))))
+end
+
+Base.string(p::PauliString) = join(pauli_inttochar.(p.string))
+function Base.show(io::IO, p::PauliString)
+    compact = get(io, :compact, false)
+    return show(io, compact ? compactstring(p) : string(p))
+end
+
+# ITensor interoperability
 
 """
     ITensors.op(p::PauliString)
