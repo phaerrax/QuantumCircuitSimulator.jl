@@ -297,67 +297,6 @@ function MPO(::SiteType"Qubit", sites::Vector{<:Index}, p::PauliString)
     return MPO(ComplexF64, sites, opnames)
 end
 
-"""
-    samplepaulistrings(v::MPS, nsamples::Integer)
-
-Sample `nsamples` Pauli strings from `v` and compute their overlap with the MPS.
-Return a pair `ps, overlaps` where `overlaps[k]` is the coefficient of the `ps[k]`
-component of `v`: this means that if we write `v` as a linear combination of Pauli
-strings ``v = ∑ₖ cₖσₖ`` then `overlaps[k]` is the coefficient ``cₖ``.
-
-Note that the MPS of a Pauli string is not normalized in the Hilbert-Schmidt inner
-product ``⟨A,B⟩ = tr(A† B)``: the norm of a Pauli string of length `N` is ``2^(N/2)``.
-"""
-function samplepaulistrings(v::MPS, nsamples::Integer)
-    if any(t -> !(SiteType("vQubit") in t), _sitetypes.(siteinds(v)))
-        error("samplepaulistrings works for vQubit site types only.")
-    end
-
-    # The sampling algorithm requires a normalized MPS orthogonalized on the first site.
-    vn = orthogonalize(v, 1)
-    vn /= norm(vn)
-    sites = siteinds(v)
-
-    ps = Vector{PauliString}(undef, nsamples)
-    for i in 1:nsamples
-        ps[i] = PauliString(sample(vn) .- 1)
-        # sample(vn) gives us a vector of elements from {1, 2, 3, 4}; they are indices
-        # referring to the PTM basis {I/sqrt(2), X/sqrt(2), Y/sqrt(2), Z/sqrt(2)}.
-        # PauliString objects work with {0, 1, 2, 3} (respectively) instead so we need to
-        # decrease by one.
-    end
-
-    # We compute the overlap of each Pauli string with the (normalized) MPS v.
-    # Note that the MPS created from a PauliString object is not normalized, since it uses
-    # the {I, X, Y, Z} matrices instead of their rescaled counterparts in the PTM basis.
-    # For this reason, each MPS(sites, p) has norm 2^(length(sites)/2), and the overlap
-    # must be normalized accordingly.
-    # The orthonormal PTM basis is (N := length(sites))
-    #   eₖ = 2^(-N/2) σₖ,
-    # so we can extract the coefficients with the inner product as follows:
-    #   v = ∑ₖ cₖσₖ
-    #   ⟨eⱼ, v⟩ = ∑ₖ cₖ⟨eⱼ,σₖ⟩ = 2^(N/2) ∑ₖ cₖ⟨eⱼ,eₖ⟩ =  2^(N/2) cⱼ
-    # therefore cₖ = 2^(-N/2) ⟨eₖ, v⟩ = 2^(-N) ⟨σₖ, v⟩.
-    normf = 2^(length(sites) / 2)
-    overlaps = Vector{ComplexF64}(undef, nsamples)
-    for i in 1:nsamples
-        overlaps[i] = _contractPTM(ps[i], v) / normf
-    end
-
-    return ps, overlaps
-end
-
-function _contractPTM(p::PauliString, v::MPS)
-    # Note that this function does not return the inner product of the Pauli string and v.
-    # In fact it computes the inner product of the e_{p_1,..., p_N} element of the PTM
-    # basis with v, where N = length(v), and e_{p_1,..., p_N} == 2^(-N/2) * p.
-    c = ITensors.OneITensor()
-    for n in 1:length(v)
-        c *= _contract(onehot(siteind(v, n) => p.string[n] + 1), v[n])
-    end
-    return scalar(c)
-end
-
 @memoize function _contract(x::ITensor, y::ITensor)
     # This tiny little function is here just so that we can memoize the calculations.
     #
