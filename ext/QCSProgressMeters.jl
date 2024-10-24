@@ -1,16 +1,11 @@
-function _contractPTM(p::PauliString, v::MPS)
-    # Note that this function does not return the inner product of the Pauli string and v.
-    # In fact it computes the inner product of the e_{p_1,..., p_N} element of the PTM
-    # basis with v, where N = length(v), and e_{p_1,..., p_N} == 2^(-N/2) * p.
-    c = ITensors.OneITensor()
-    for n in 1:length(v)
-        c *= _contract(onehot(siteind(v, n) => p.string[n] + 1), v[n])
-    end
-    return scalar(c)
-end
+module QCSProgressMeters
+
+using QuantumCircuitSimulator, ProgressMeter, ITensors, ITensorMPS
+using QuantumCircuitSimulator: _contractPTM
+using ITensors.SiteTypes: SiteType, _sitetypes, commontags
 
 """
-    samplepaulistrings(v::MPS, nsamples::Integer)
+    samplepaulistrings_progress(v::MPS, nsamples::Integer)
 
 Sample `nsamples` Pauli strings from `v` and compute their overlap with the MPS.
 Return a pair `ps, overlaps` where `overlaps[k]` is the coefficient of the `ps[k]`
@@ -20,7 +15,7 @@ strings ``v = ∑ₖ cₖσₖ`` then `overlaps[k]` is the coefficient ``cₖ``.
 Note that the MPS of a Pauli string is not normalized in the Hilbert-Schmidt inner
 product ``⟨A,B⟩ = tr(A† B)``: the norm of a Pauli string of length `N` is ``2^(N/2)``.
 """
-function samplepaulistrings(v::MPS, nsamples::Integer)
+function QuantumCircuitSimulator.samplepaulistrings_progress(v::MPS, nsamples::Integer)
     if any(t -> !(SiteType("vQubit") in t), _sitetypes.(siteinds(v)))
         error("samplepaulistrings works for vQubit site types only.")
     end
@@ -31,7 +26,7 @@ function samplepaulistrings(v::MPS, nsamples::Integer)
     sites = siteinds(v)
 
     ps = Vector{PauliString}(undef, nsamples)
-    for i in 1:nsamples
+    @showprogress desc = "Sampling Pauli strings" for i in 1:nsamples
         ps[i] = PauliString(sample(vn) .- 1)
         # sample(vn) gives us a vector of elements from {1, 2, 3, 4}; they are indices
         # referring to the PTM basis {I/sqrt(2), X/sqrt(2), Y/sqrt(2), Z/sqrt(2)}.
@@ -60,7 +55,7 @@ function samplepaulistrings(v::MPS, nsamples::Integer)
 end
 
 """
-    relevantpaulistrings(v::MPS; nsamples, maxn, cutoff, imag_atol=1e-10)
+    relevantpaulistrings_progress(v::MPS; nsamples, maxn, cutoff, imag_atol=1e-10)
 
 Sample at most `nsamples` Pauli strings from the MPS `v` (which is assumed to represent an
 observable in the PTM basis) and return a list of tuples of the form `(ps, coeff, freq)`
@@ -75,9 +70,11 @@ The list is shown from the most to least relevant component, i.e. highest to the
 modulus of the coefficient. It can be cutoff after a certain maximum number of
 strings, or below a set frequency.
 """
-function relevantpaulistrings(v::MPS; nsamples, maxn=0, cutoff=0, imag_atol=1e-10)
+function QuantumCircuitSimulator.relevantpaulistrings_progress(
+    v::MPS; nsamples, maxn=0, cutoff=0, imag_atol=1e-10
+)
     # 1) Sample some Pauli strings from the observable
-    strings, coefficients = samplepaulistrings(v, nsamples)
+    strings, coefficients = samplepaulistrings_progress(v, nsamples)
     # We can assume that the coefficients are real, and just print a warning if some of
     # them aren't.
     test_imag = findfirst(>(imag_atol), imag.(coefficients))
@@ -113,10 +110,4 @@ function relevantpaulistrings(v::MPS; nsamples, maxn=0, cutoff=0, imag_atol=1e-1
     return mostfrequent
 end
 
-function samplepaulistrings_progress()
-    @error "Please load the ProgressMeter package to load this function."
-end
-
-function relevantpaulistrings_progress()
-    @error "Please load the ProgressMeter package to load this function."
-end
+end # end module

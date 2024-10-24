@@ -20,6 +20,7 @@ include("gate.jl")
 export PauliString, indices, operators, order, SPLNoiseModel, nqbits
 include("paulistring.jl")
 export samplepaulistrings, relevantpaulistrings
+export samplepaulistrings_progress, relevantpaulistrings_progress
 include("paulistring_sampling.jl")
 
 #include("qelib1_gates_2.0.jl")
