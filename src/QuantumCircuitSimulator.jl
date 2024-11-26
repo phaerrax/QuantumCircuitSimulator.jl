@@ -1,15 +1,16 @@
 module QuantumCircuitSimulator
 
-using ITensors,
+using DataStructures,
+    ITensors,
     ITensorMPS,
-    LindbladVectorizedTensors,
     JSON,
-    OffsetArrays,
+    LindbladVectorizedTensors,
     LinearAlgebra,
-    RBNF,
+    Memoize,
+    OffsetArrays,
     OpenQASM,
-    DataStructures,
-    Memoize
+    PauliStrings,
+    RBNF
 
 include("utils.jl")
 
@@ -17,10 +18,7 @@ export gate, GateName, @GateName_str
 include("gatename.jl")
 include("gate.jl")
 
-export PauliString, indices, operators, order, SPLNoiseModel, nqbits
-include("paulistring.jl")
 export samplepaulistrings, relevantpaulistrings
-export samplepaulistrings_progress, relevantpaulistrings_progress
 include("paulistring_sampling.jl")
 
 #include("qelib1_gates_2.0.jl")
@@ -31,7 +29,7 @@ include("gates_vqbits.jl")
 export compose, gates, gatelayers
 include("qasm_itensors_parser.jl")
 
-export qbitsites, noiselayer, inversenoiselayer, crop
+export qbitsites, noiselayer, inversenoiselayer, crop, SPLNoiseModel, nqbits
 include("spl_noise_model.jl")
 
 end

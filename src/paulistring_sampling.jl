@@ -1,3 +1,28 @@
+@memoize function _contract(x::ITensor, y::ITensor)
+    # This tiny little function is here just so that we can memoize the calculations.
+    #
+    # Note: @memoize by default compares arguments by using the hash function `objectid`.
+    # If a primitive type (?) is supplied directly (without first binding it to a variable)
+    # then the object id is the same; with composite types this might not happen.
+    # For example, if we have a memoized function `f` of a single variable, then repeated
+    # calls to f(4) will use the cached value, but f([1, 2, 3]) won't, since [1, 2, 3] is
+    # treated as a new variable each time. We should keep that in mind.
+    # Anyway, the `shotmeasurement` function is called with the same `shotduals` and
+    # `observable` objects each time (each one bound to a variable) so it should be fine.
+
+    # Some stats from @btime:
+    #   ⋅ ps = vector of 50 Pauli strings
+    #   ⋅ s = siteinds("vQubit", 50)
+    #   ⋅ v = randomMPS(s; linkdims=10)
+    #
+    # @btime foreach(p -> dot(MPS(s, p), v), ps)
+    #   216.343 ms (970371 allocations: 233.83 MiB)
+    #
+    # @btime foreach(p -> QuantumCircuitSimulator.contractpauli(p, v), ps)
+    #   30.246 ms (209801 allocations: 36.17 MiB)
+    return x * y
+end
+
 function _contractPTM(p::PauliString, v::MPS)
     # Note that this function does not return the inner product of the Pauli string and v.
     # In fact it computes the inner product of the e_{p_1,..., p_N} element of the PTM

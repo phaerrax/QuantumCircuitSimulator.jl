@@ -4,6 +4,8 @@ using QuantumCircuitSimulator, ProgressMeter, ITensors, ITensorMPS
 using QuantumCircuitSimulator: _contractPTM
 using ITensors.SiteTypes: SiteType, _sitetypes, commontags
 
+export samplepaulistrings_progress, relevantpaulistrings_progress
+
 """
     samplepaulistrings_progress(v::MPS, nsamples::Integer)
 
