@@ -9,7 +9,7 @@ using DataStructures,
     Memoize,
     OffsetArrays,
     OpenQASM,
-    PauliStrings,
+    PauliStringTensors,
     RBNF
 
 include("utils.jl")

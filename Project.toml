@@ -1,7 +1,7 @@
 name = "QuantumCircuitSimulator"
 uuid = "400a33f1-71bb-44d0-bc88-50d33f8b7a09"
 authors = ["Davide Ferracin <davide.ferracin@protonmail.com> and contributors"]
-version = "0.8.0"
+version = "0.8.1"
 
 [deps]
 Conda = "8f4d0f93-b110-5947-807f-2305c1781a2d"
@@ -14,7 +14,7 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Memoize = "c03570c3-d221-55d1-a50c-7939bbd78826"
 OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
 OpenQASM = "a8821629-a4c0-4df7-9e00-12969ff383a7"
-PauliStrings = "3a97391d-bfb9-411c-b0e9-b32c43ed22e1"
+PauliStringTensors = "3a97391d-bfb9-411c-b0e9-b32c43ed22e1"
 PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 RBNF = "83ef0002-5b9e-11e9-219b-65bac3c6d69c"
 
@@ -26,5 +26,5 @@ QCSProgressMeters = "ProgressMeter"
 
 [compat]
 ITensors = ">= 0.4.1"
-PauliStrings = ">= 0.1.4"
+PauliStringTensors = "0.1.4"
 julia = "1.6.7"

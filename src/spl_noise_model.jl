@@ -13,7 +13,9 @@ struct SPLNoiseModel
         if !allequal(length.(keys(dict)))
             # Check that all strings have the same length...
             error("Pauli strings don't have the same length")
-        elseif !all(n -> (n == 1 || n == 2), [PauliStrings.order(p.first) for p in dict])
+        elseif !all(
+            n -> (n == 1 || n == 2), [PauliStringTensors.order(p.first) for p in dict]
+        )
             # ...and that their order is 1 or 2
             error("Some Pauli strings don't have order 1 or 2")
         elseif length(first(keys(dict))) != length(indices)
@@ -69,11 +71,11 @@ function noise_ptm_generators(model::SPLNoiseModel)
     vec = [zeros(Float64, 3) for _ in 1:N]
     mat = [zeros(Float64, 3, 3) for _ in 1:(N - 1)]
     for (k, v) in model.parameters
-        if PauliStrings.order(k) == 1
+        if PauliStringTensors.order(k) == 1
             # indices(k): index of non-trivial factors in Pauli string
             # operators(k): non-trivial factors in Pauli string
             vec[first(indices(k))][operators(k)...] = v
-        elseif PauliStrings.order(k) == 2
+        elseif PauliStringTensors.order(k) == 2
             mat[first(indices(k))][operators(k)...] = v
         else
             # This shouldn't happens since the inner constructor of SPLNoiseModel enforces

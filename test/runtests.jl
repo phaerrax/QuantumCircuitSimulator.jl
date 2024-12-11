@@ -1,5 +1,5 @@
 using QuantumCircuitSimulator
-using ITensors, ITensorMPS, LindbladVectorizedTensors, PauliStrings
+using ITensors, ITensorMPS, LindbladVectorizedTensors, PauliStringTensors
 using OpenQASM
 using Conda, PyCall, Pkg
 using Test
