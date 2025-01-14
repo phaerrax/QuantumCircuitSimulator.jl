@@ -18,7 +18,7 @@ function reldist(x, y)
     end
 end
 
-function spl_noise_truncation(; N=10, atol=1e-10)
+function spl_noise_truncation(; N=8, atol=1e-10)
     # We build an artificial SPL noise model with random strings and coefficients.
     spl_dictionary = Dict{PauliString,Float64}()
     # There are at most 3N + 9(N-1) distinct 1-site and (contiguous) 2-site Pauli strings

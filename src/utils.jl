@@ -1,5 +1,3 @@
-using ITensors
-
 """
     coefficient(v::MPS, i::Integer; qiskit=false)
 
