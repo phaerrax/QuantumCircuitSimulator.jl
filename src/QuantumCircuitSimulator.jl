@@ -26,10 +26,16 @@ include("paulistring_sampling.jl")
 include("qiskit_gates.jl")
 include("gates_vqbits.jl")
 
-export compose, gates, gatelayers
+export compose, gates
 include("qasm_itensors_parser.jl")
+
+export QuantumCircuit, depth, quantumcircuit, parsecircuit, layers_mpo
+include("quantum_circuit.jl")
 
 export qbitsites, noiselayer, inversenoiselayer, crop, SPLNoiseModel, nqbits
 include("spl_noise_model.jl")
+
+export gatelayers
+include("deprecated.jl")
 
 end

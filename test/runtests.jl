@@ -50,3 +50,9 @@ include("pauli_sampling.jl")
 @testset "Sampling of Pauli strings from MPS" begin
     @test pauli_sampling()
 end
+
+include("circuit_parsing.jl")
+
+@testset "Circuit parsing" begin
+    @test test_parse()
+end
