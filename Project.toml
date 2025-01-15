@@ -1,7 +1,7 @@
 name = "QuantumCircuitSimulator"
 uuid = "400a33f1-71bb-44d0-bc88-50d33f8b7a09"
 authors = ["Davide Ferracin <davide.ferracin@protonmail.com> and contributors"]
-version = "0.8.2"
+version = "0.8.3"
 
 [deps]
 Conda = "8f4d0f93-b110-5947-807f-2305c1781a2d"
