@@ -9,6 +9,7 @@ using DataStructures,
     Memoize,
     OffsetArrays,
     OpenQASM,
+    ProgressMeter,
     PauliStringTensors,
     RBNF
 
