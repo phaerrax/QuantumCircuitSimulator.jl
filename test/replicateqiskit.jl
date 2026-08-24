@@ -88,7 +88,7 @@ function replicateqiskit(qiskitcircuit::Function)
     # Now we read the OpenQASM file and build the circuit with our library.
     sites, gatelist = open(qasmfile_path, "r") do f
         code = OpenQASM.parse(read(f, String))
-        gates(code, "Qubit")
+        return gates(code, "Qubit")
     end
 
     state = MPS(sites, "0")
@@ -120,7 +120,7 @@ function paulistringordering(str::AbstractString)
 
     # Create an ITensors operator from it.
     sites = siteinds("Qubit", N)
-    pstr_op = op(sites, pstr)
+    pstr_op = ITensors.op(sites, pstr)
 
     # Apply to a zero initial state.
     initialstate = MPS(sites, "0")

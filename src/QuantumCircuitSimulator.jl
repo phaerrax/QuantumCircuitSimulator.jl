@@ -22,9 +22,7 @@ include("gate.jl")
 export samplepaulistrings, relevantpaulistrings
 include("paulistring_sampling.jl")
 
-#include("qelib1_gates_2.0.jl")
-#include("qelib1_gates_3.0.jl")
-include("qiskit_gates.jl")
+include("gate_library.jl")
 include("gates_vqbits.jl")
 
 export compose, gates

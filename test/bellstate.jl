@@ -1,14 +1,14 @@
 using ITensors.SiteTypes: _sitetypes
+using LinearAlgebra
 
 function ITensors.state(sn::StateName"X+", st::SiteType"vQubit")
-    v = ITensors.state(sn, SiteType("Qubit"))
+    v = ITensors.state(sn, ITensors.SiteType("Qubit"))
     return LindbladVectorizedTensors.vec(kron(v, v'), LindbladVectorizedTensors.ptmbasis(1))
 end
 
 function ITensors.op(::OpName"Bell2Entangler", st::SiteType"Qubit")
-    sigma_x = ITensors.op(OpName("X"), st)
-    id = ITensors.op(OpName("Id"), st)
-    return (1 / sqrt(2)) .* (kron(sigma_x, id) + kron(id, sigma_x))
+    sigma_x = ITensors.op(ITensors.OpName("X"), st)
+    return (1 / sqrt(2)) .* (kron(sigma_x, I(2)) + kron(I(2), sigma_x))
 end
 
 bellstate(::SiteType, sites) = nothing
@@ -21,7 +21,7 @@ function bellstate(sites)
     end
     return throw(
         ArgumentError(
-            "Overload of \"kicked_ising_gate_seq\" function not found for " *
+            "Overload of \"bellstate\" function not found for " *
             "Index tags $(ITensors.tags.(sites))",
         ),
     )
@@ -32,7 +32,7 @@ function bellstate(::SiteType"Qubit", sites)
     v = MPS(sites, [j == 1 ? "X+" : "0" for j in 1:N])
     # Apply the "Bell entangler" gate pair by pair to create the initial state.
     for j in 2:2:N
-        v = apply(op("Bell2Entangler", sites, j, j + 1), v)
+        v = apply(ITensors.op("Bell2Entangler", sites, j, j + 1), v)
     end
     return v
 end

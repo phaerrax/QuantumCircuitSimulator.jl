@@ -40,9 +40,15 @@ end
 include("gates.jl")
 
 @testset "Gate adjoints and Qubit/vQubit equivalence" begin
-    @test gateadjoints()
-    @test gates_vqubit()
-    @test ecr_vqubit()
+    test_Ugates()
+    test_xyz_gates()
+    test_hspt_gates()
+    test_rotation_gates()
+    test_other_gates()
+    test_controlled_gates()
+    test_gate_adjoints()
+    test_gates_vqubit()
+    test_ecr_vqubit()
 end
 
 include("pauli_sampling.jl")
