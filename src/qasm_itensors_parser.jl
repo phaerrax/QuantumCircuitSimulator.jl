@@ -1,4 +1,5 @@
 using ITensors.SiteTypes: _sitetypes, commontags
+using Suppressor: @capture_err
 
 """
     qbitsites(code::OpenQASM.Types.MainProgram, st::AbstractString)
@@ -188,8 +189,59 @@ function definition(gate::OpenQASM.Types.Gate, st::SiteType)
     return str
 end
 
+function eval_gate_definition(code::AbstractString; warn_on_gate_redefinition)
+    expr = Meta.parse(code)
+    # When `expr` is finally evaluated, it can trigger warnings such as
+    #
+    # WARNING: Method definition gate(QuantumCircuitSimulator.GateName{:rzx},
+    # ITensors.SiteTypes.SiteType{ITensors.SmallStrings.SmallString(data=StaticArraysCore.SArray{Tuple{16},
+    # UInt16, 1, 16}(data=(0x0051, 0x0075, 0x0062, 0x0069, 0x0074, 0x0000, 0x0000, 0x0000,
+    # 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000)))}, ITensors.Index{T}
+    # where T, ITensors.Index{T} where T) in module QuantumCircuitSimulator at none:1
+    # overwritten on the same line (check for duplicate calls to `include`).
+    #
+    # due to the fact that the current gate definition ends up overwriting an existing one.
+    # The warning is printed even if the old and the new methods are identical, i.e. it is
+    # shown whenever the method signatures are identical.
+    # This is usually not a problem, because the input OpenQASM file should be taken as the
+    # ultimate source of truth for gate definitions, so even when a gate from the input file
+    # ends up overwriting one in the package library, there is a good reason for it: the
+    # circuit simulation should follow the definition given in the OpenQASM file.
+    #
+    # For this reason, these warnings are mostly annoying and can be suppressed. We keep
+    # however the option to show them anyway, it might be useful for some purposes.
+
+    if warn_on_gate_redefinition
+        # * Option A: show the warnings anyway. This is standard Julia execution.
+        return eval(expr)
+    else
+        # * Option B: suppress the warnings.
+        # Since they are emitted by Julia's compiler, and printed straight to stderr, we
+        # capture the stream temporarily. However, this can also inadvertently suppress
+        # anything else that is passed to stderr while it is captured. For this reason,
+        # in order not to lose that output, we re-print it later, filtering out the method
+        # overwrite warnings.
+        # The overwrite warning has a fixed shape: it always starts with "WARNING: Method
+        # definition" and always ends with "(check for duplicate calls to `include`).", so
+        # we can parse the whole message as one block with a regex, then strip away the
+        # match, leaving everything else untouched.
+        msgs = @capture_err eval(expr)
+        filtered_msgs = replace(
+            msgs,
+            r"WARNING: Method definition.*?\(check for duplicate calls to `include`\)\.\n?"s => "",
+            # - the `s` flag at the end lets the dot (.) match across newlines as well ---
+            #   useful in case the warning itself wraps.
+            # - the `.*?` sequence between the beginning and end snippets ensures that each
+            #   match stops at the nearest closing phrase (it's a non greedy quantifier).
+        )
+        print(stderr, filtered_msgs)
+    end
+
+    return nothing
+end
+
 """
-    gates(code::OpenQASM.Types.MainProgram, st::AbstractString)
+    gates(code::OpenQASM.Types.MainProgram, st::AbstractString; warn_on_gate_redefinition)
 
 Create a list of gates (ITensor operators) as parsed from the given OpenQASM `code`,
 returning a triple `(s, ops)` where:
@@ -215,7 +267,9 @@ ITensor ord=4 (dim=2|id=758|"Qubit,Site,a,n=2")' (dim=2|id=680|"Qubit,Site,a,n=1
 NDTensors.Dense{Float64, Vector{Float64}}
 ```
 """
-function gates(code::OpenQASM.Types.MainProgram, st::AbstractString)
+function gates(
+    code::OpenQASM.Types.MainProgram, st::AbstractString; warn_on_gate_redefinition
+)
     sites = qbitsites(code, st)
 
     gatelist = ITensor[]
@@ -224,7 +278,7 @@ function gates(code::OpenQASM.Types.MainProgram, st::AbstractString)
             push!(gatelist, parsegate(sites, line))
         elseif line isa OpenQASM.Types.Gate
             new_gate_method = definition(line, SiteType(st))
-            eval(Meta.parse(new_gate_method))
+            eval_gate_definition(new_gate_method; warn_on_gate_redefinition)
         end
     end
     return sites, gatelist
@@ -238,7 +292,9 @@ building the operators on the already existing Index objects in `sites`.
 The given `sites` are checked to ensure they are compatible to the ones that
 would be generated from `code`.
 """
-function gates(code::OpenQASM.Types.MainProgram, sites::Vector{<:Index})
+function gates(
+    code::OpenQASM.Types.MainProgram, sites::Vector{<:Index}; warn_on_gate_redefinition
+)
     commontags_s = commontags(sites...)
     common_stypes = _sitetypes(commontags_s)
     if "Qubit" in sitetypename.(common_stypes)
@@ -260,7 +316,7 @@ function gates(code::OpenQASM.Types.MainProgram, sites::Vector{<:Index})
             push!(gates, parsegate(sites, line))
         elseif line isa OpenQASM.Types.Gate
             new_gate_method = definition(line, SiteType(st))
-            eval(Meta.parse(new_gate_method))
+            eval_gate_definition(new_gate_method; warn_on_gate_redefinition)
         end
     end
     return gates

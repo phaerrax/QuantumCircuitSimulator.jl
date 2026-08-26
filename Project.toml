@@ -1,7 +1,7 @@
 name = "QuantumCircuitSimulator"
 uuid = "400a33f1-71bb-44d0-bc88-50d33f8b7a09"
-authors = ["Davide Ferracin <davide.ferracin@icloud.com> and contributors"]
 version = "0.8.7"
+authors = ["Davide Ferracin <davide.ferracin@icloud.com> and contributors"]
 
 [deps]
 Conda = "8f4d0f93-b110-5947-807f-2305c1781a2d"
@@ -18,6 +18,7 @@ PauliStringTensors = "3a97391d-bfb9-411c-b0e9-b32c43ed22e1"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 RBNF = "83ef0002-5b9e-11e9-219b-65bac3c6d69c"
+Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 
 [extensions]
 QCSProgressMeters = "ProgressMeter"

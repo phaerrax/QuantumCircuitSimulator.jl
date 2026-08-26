@@ -88,7 +88,7 @@ function replicateqiskit(qiskitcircuit::Function)
     # Now we read the OpenQASM file and build the circuit with our library.
     sites, gatelist = open(qasmfile_path, "r") do f
         code = OpenQASM.parse(read(f, String))
-        return gates(code, "Qubit")
+        return gates(code, "Qubit"; warn_on_gate_redefinition=false)
     end
 
     state = MPS(sites, "0")
