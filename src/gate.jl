@@ -36,11 +36,6 @@ end
 gate(::GateName; kwargs...) = nothing
 gate(::GateName, ::SiteType; kwargs...) = nothing
 gate(::GateName, ::SiteType, ::Index...; kwargs...) = nothing
-function gate(
-    ::GateName, ::SiteType, ::SiteType, sitetypes_inds::Union{SiteType,Index}...; kwargs...
-)
-    return nothing
-end
 
 # Main definition of `gate`
 # -------------------------
