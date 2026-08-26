@@ -11,7 +11,7 @@ function gatelayers(gates::Vector{ITensor})
     Base.depwarn(
         "The `gatelayers(gates)` function will be deprecated in a future release. " *
         "To organize the gates into layers, please use the " *
-        "`parsecircuit(code)` instead, loading the circuit directly from an OpenQASM " *
+        "`quantumcircuit(code)` instead, loading the circuit directly from an OpenQASM " *
         "program into a QuantumCircuit object. The new " *
         "also uses a \"greedier\" " *
         "layering algorithm that should produce fewer layers.",

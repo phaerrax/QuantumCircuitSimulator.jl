@@ -23,7 +23,7 @@ include("paulistring_sampling.jl")
 export compose, gates
 include("qasm_itensors_parser.jl")
 
-export QuantumCircuit, depth, quantumcircuit, parsecircuit, layers_mpo
+export QuantumCircuit, depth, quantumcircuit, layers_mpo
 include("quantum_circuit.jl")
 
 export qbitsites, noiselayer, inversenoiselayer, crop, SPLNoiseModel, nqbits

@@ -127,18 +127,26 @@ function _qbittag(s)
 end
 
 """
-    quantumcircuit(code::OpenQASM.Types.MainProgram; operator_picture=false)
+    quantumcircuit(code::OpenQASM.Types.MainProgram; kwargs...)
 
 Parse the circuit defined in `code` as a `QuantumCircuit` object, structuring the sequence
 of gates in layer. The gates are added to the layers in a way that _should_ resemble
 the "ASAP" policy by Qiskit.
 
-If `operator_picture` is `false` then the circuit is interpreted as a sequence of gates to
-be applied to a pure state; if it is `true` instead it will be a sequence of gates to be
-applied to mixed states (in the Schrödinger picture) or to observables (in the Heisenberg
-picture).
+# Keyword arguments
+
+* `operator_picture`: if `false` (default) then the circuit is interpreted as a sequence of
+  gates to be applied to a pure state; if it is `true` instead it will be a sequence of
+  gates to be applied to mixed states (in the Schrödinger picture) or to observables (in the
+  Heisenberg picture).
+* `warn_on_gate_redefinition` if `false` (default), ignore the "Method overwritten" warnings
+  that the Julia compiler might print whenever a gate definition overwrites an existing one.
 """
-function quantumcircuit(code::OpenQASM.Types.MainProgram; operator_picture=false)
+function quantumcircuit(
+    code::OpenQASM.Types.MainProgram;
+    operator_picture=false,
+    warn_on_gate_redefinition=false,
+)
     st = (operator_picture ? "vQubit" : "Qubit")
     circsites = qbitsites(code, st)
 
@@ -199,7 +207,7 @@ function quantumcircuit(code::OpenQASM.Types.MainProgram; operator_picture=false
             # This is a definition of a new gate, so we call the code that creates and
             # evaluates a new `gate` method.
             new_gate_method = definition(line, SiteType(st))
-            eval(Meta.parse(new_gate_method))
+            eval_gate_definition(new_gate_method; warn_on_gate_redefinition)
         elseif line isa OpenQASM.Types.Barrier
             @warn "Barriers are not (yet) implemented. This line will be skipped."
         end
