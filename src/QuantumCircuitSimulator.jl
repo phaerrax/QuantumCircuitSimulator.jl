@@ -23,7 +23,6 @@ export samplepaulistrings, relevantpaulistrings
 include("paulistring_sampling.jl")
 
 include("gate_library.jl")
-include("gates_vqbits.jl")
 
 export compose, gates
 include("qasm_itensors_parser.jl")

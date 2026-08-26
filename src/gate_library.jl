@@ -34,15 +34,25 @@ openqasm2_phase(θ, ϕ, λ) = exp(-im / 2 * (ϕ + λ))
 openqasm3_phase(θ, ϕ, λ) = exp(im / 2 * θ)
 qiskit_phase(θ, ϕ, λ) = 1
 
-# NOTE: `gate(matrix, s...)` (the array-to-ITensor helper in gate.jl) takes its site
-# arguments in the OPPOSITE order from what the matrix's row/column blocks would naively
-# suggest: we need to pass (target, control) here, and not (control, target) in order to
-# make cu3's first 2x2 block be the result of the control qbit being |0⟩`.
+# Interface for vectorised states
+# -------------------------------
 
-### Basic unitary gates
+# This retrieves a gate G for the Qubit site type, and then returns the vectorisation of
+# the G ⋅ G† operation, that can be applied to (vectorised) mixed states or operators (via
+# its adjoint).
+function gate(gn::GateName, vst::SiteType"vQubit", vs::Index...; cargs...)
+    s = [siteind("Qubit") for _ in vs]
+    g = gate(gn, SiteType("Qubit"), s...; cargs...)
+    return adjointmap_itensor(g; orig_sites=s, vec_sites=[vs...])
+    # Note that both `orig_sites` and `vec_sites` must be _vectors_ of indices: `s` already
+    # is so, but we must wrap `vs...` in a vector for this reason.
+end
 
-function gate(::GateName"id", ::SiteType"Qubit", s::Index)
-    return ITensors.op("Id", s)
+# Basic unitary gates
+# -------------------
+
+function gate(::GateName"id", ::SiteType"Qubit", s::Index...)
+    return ITensors.op("Id", s...)
 end
 
 function ITensors.op(::OpName"U", ::SiteType"Qubit", s::Index; θ::Real, ϕ::Real, λ::Real)
@@ -78,6 +88,9 @@ end
 function gate(::GateName"u3", ::SiteType"Qubit", s::Index; cargs)
     return gate("u", s; cargs)
 end
+
+# Basic gates
+# -----------
 
 function gate(::GateName"x", ::SiteType"Qubit", s::Index)
     return ITensors.op("X", s)
@@ -123,7 +136,8 @@ function gate(::GateName"tdg", ::SiteType"Qubit", s::Index)  # Adjoint of "T"
     return ITensors.op("Phase", s; ϕ=(-pi / 4))
 end
 
-### Rotation gates
+# Rotation gates
+# --------------
 
 function gate(::GateName"rx", ::SiteType"Qubit", s::Index; cargs)
     θ = only(cargs)
@@ -185,7 +199,8 @@ function gate(::GateName"rzz", ::SiteType"Qubit", q1::Index, q2::Index; cargs)
     return gate(rzz, q2, q1)
 end
 
-### Controlled gates
+# Controlled gates
+# ----------------
 
 function gate(::GateName"cx", ::SiteType"Qubit", control::Index, target::Index)
     return ITensors.op("CX", control, target)
@@ -295,7 +310,8 @@ function gate(::GateName"cu3", ::SiteType"Qubit", control::Index, target::Index;
     return gate(cu3, target, control)
 end
 
-### Other gates
+# Other gates
+# -----------
 
 function gate(::GateName"sx", ::SiteType"Qubit", s::Index)
     return ITensors.op("√X", s)
