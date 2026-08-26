@@ -16,13 +16,11 @@ using DataStructures,
 include("utils.jl")
 
 export gate, GateName, @GateName_str
-include("gatename.jl")
 include("gate.jl")
+include("gate_library.jl")
 
 export samplepaulistrings, relevantpaulistrings
 include("paulistring_sampling.jl")
-
-include("gate_library.jl")
 
 export compose, gates
 include("qasm_itensors_parser.jl")

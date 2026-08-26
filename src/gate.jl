@@ -1,17 +1,38 @@
 using ITensors.SiteTypes: _sitetypes, commontags
 
-export gate
+# The `gate` method is an additional layer over ITensor's own `op` mechanism, used to
+# "translate" OpenQASM instructions to ITensor operators in a structured way.  It can, of
+# course, be used on its own to create quantum gates. 
+# Its design is similar to `ITensors.op`, in that the gate name is expressed through the
+# parametrised type `GateName`, that allows us to use multiple dispatch (internally) on the
+# gate names.  The user just needs to provide the gate name as a string and the Index
+# objects (and possibly some numerical parameters, such as angles) to create the gate.
+# The result is a standard ITensor.
 
-# We cannot directly use ITensors' own "op" here for our gates since we would like to define
-# gates with the same name acting on Qubit and vQubit site types alike, the only difference
-# being in the site type.
-# For example, we would like to have a gate "U" acting as the operator "U" on qbits and as
-# "U* ⋅ U" on vectorized qbits. We can't define the second one as "U" for vQubits in a way
-# that is compatible with the automatic rules built in LindbladVectorizedTensors to build
-# multiplication operators.
+# GateName definition
+# -------------------
 
-# Default implementations of gate
-# -------------------------------
+struct GateName{Name} end
+
+"""
+GateName is a parameterized type which allows making strings into Julia types for the
+purpose of representing gate names.  The main use of GateName is overloading the `gate`
+method which generates operators for Qubit and vQubit sites.
+
+To make a GateName type, you can use the string macro notation: `GateName"MyTag"`.
+To make an GateName value or object, you can use the notation: `GateName("mygate")`.
+"""
+GateName(s::AbstractString) = GateName{Symbol(s)}()
+GateName(s::Symbol) = GateName{s}()
+name(::GateName{N}) where {N} = N
+
+macro GateName_str(s)
+    return GateName{Symbol(s)}
+end
+
+# Default implementations of `gate`
+# ---------------------------------
+
 gate(::GateName; kwargs...) = nothing
 gate(::GateName, ::SiteType; kwargs...) = nothing
 gate(::GateName, ::SiteType, ::Index...; kwargs...) = nothing
@@ -21,10 +42,11 @@ function gate(
     return nothing
 end
 
-# Main definition of gate
-# -----------------------
+# Main definition of `gate`
+# -------------------------
+
 """
-    gate(name::String, s::Index...; kwargs...)
+    gate(name::AbstractString, s::Index...; kwargs...)
 
 Return an ITensor corresponding to the gate named `name` for the Index `s`.
 The operator is constructed by calling an overload of the `gate` method which takes a
@@ -87,7 +109,8 @@ gate(name::AbstractString; kwargs...) = error("Must input indices when creating 
 
 # On-the-fly gate construction
 # ----------------------------
-# Useful for creating a new gate which is not a predefined one.
+
+# These methods are useful for creating a new gate which is not a predefined one.
 """
     gate(X::AbstractArray, s::Index...)
     gate(M::Matrix, s::Index...)
