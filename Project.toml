@@ -20,9 +20,6 @@ PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 RBNF = "83ef0002-5b9e-11e9-219b-65bac3c6d69c"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 
-[extensions]
-QCSProgressMeters = "ProgressMeter"
-
 [compat]
 ITensors = ">= 0.4.1"
 LindbladVectorizedTensors = ">= 0.17.1"

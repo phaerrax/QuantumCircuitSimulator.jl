@@ -35,7 +35,7 @@ function _contractPTM(p::PauliString, v::MPS)
 end
 
 """
-    samplepaulistrings(v::MPS, nsamples::Integer)
+    samplepaulistrings(v::MPS, nsamples::Integer; progress=false)
 
 Sample `nsamples` Pauli strings from `v` and compute their overlap with the MPS.
 Return a pair `ps, overlaps` where `overlaps[k]` is the coefficient of the `ps[k]`
@@ -44,8 +44,10 @@ strings ``v = ∑ₖ cₖσₖ`` then `overlaps[k]` is the coefficient ``cₖ``.
 
 Note that the MPS of a Pauli string is not normalized in the Hilbert-Schmidt inner
 product ``⟨A,B⟩ = tr(A† B)``: the norm of a Pauli string of length `N` is ``2^(N/2)``.
+
+If `progress` is `true`, a progress bar is displayed while sampling.
 """
-function samplepaulistrings(v::MPS, nsamples::Integer)
+function samplepaulistrings(v::MPS, nsamples::Integer; progress::Bool=false)
     if any(t -> !(SiteType("vQubit") in t), _sitetypes.(siteinds(v)))
         error("samplepaulistrings works for vQubit site types only.")
     end
@@ -56,12 +58,14 @@ function samplepaulistrings(v::MPS, nsamples::Integer)
     sites = siteinds(v)
 
     ps = Vector{PauliString}(undef, nsamples)
+    p = Progress(nsamples; desc="Sampling Pauli strings", enabled=progress)
     for i in 1:nsamples
         ps[i] = PauliString(sample(vn) .- 1)
         # sample(vn) gives us a vector of elements from {1, 2, 3, 4}; they are indices
         # referring to the PTM basis {I/sqrt(2), X/sqrt(2), Y/sqrt(2), Z/sqrt(2)}.
         # PauliString objects work with {0, 1, 2, 3} (respectively) instead so we need to
         # decrease by one.
+        next!(p)
     end
 
     # We compute the overlap of each Pauli string with the (normalized) MPS v.
@@ -85,7 +89,7 @@ function samplepaulistrings(v::MPS, nsamples::Integer)
 end
 
 """
-    relevantpaulistrings(v::MPS; nsamples, maxn, cutoff, imag_atol=1e-10)
+    relevantpaulistrings(v::MPS; nsamples, maxn, cutoff, imag_atol=1e-10, progress=false)
 
 Sample at most `nsamples` Pauli strings from the MPS `v` (which is assumed to represent an
 observable in the PTM basis) and return a list of tuples of the form `(ps, coeff, freq)`
@@ -99,10 +103,14 @@ where:
 The list is shown from the most to least relevant component, i.e. highest to the lowest
 modulus of the coefficient. It can be cutoff after a certain maximum number of
 strings, or below a set frequency.
+
+If `progress` is `true`, a progress bar is displayed while sampling.
 """
-function relevantpaulistrings(v::MPS; nsamples, maxn=0, cutoff=0, imag_atol=1e-10)
+function relevantpaulistrings(
+    v::MPS; nsamples, maxn=0, cutoff=0, imag_atol=1e-10, progress::Bool=false
+)
     # 1) Sample some Pauli strings from the observable
-    strings, coefficients = samplepaulistrings(v, nsamples)
+    strings, coefficients = samplepaulistrings(v, nsamples; progress)
     # We can assume that the coefficients are real, and just print a warning if some of
     # them aren't.
     test_imag = findfirst(>(imag_atol), imag.(coefficients))
@@ -136,12 +144,4 @@ function relevantpaulistrings(v::MPS; nsamples, maxn=0, cutoff=0, imag_atol=1e-1
     cutoff > 0 && filter!(t -> last(t) > cutoff, mostfrequent)
 
     return mostfrequent
-end
-
-function samplepaulistrings_progress()
-    @error "Please load the ProgressMeter package to load this function."
-end
-
-function relevantpaulistrings_progress()
-    @error "Please load the ProgressMeter package to load this function."
 end
