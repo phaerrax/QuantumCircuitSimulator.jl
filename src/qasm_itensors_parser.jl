@@ -240,38 +240,12 @@ function eval_gate_definition(code::AbstractString; warn_on_gate_redefinition)
     return nothing
 end
 
-"""
-    gates(code::OpenQASM.Types.MainProgram, st::AbstractString; warn_on_gate_redefinition)
-
-Create a list of gates (ITensor operators) as parsed from the given OpenQASM `code`,
-returning a triple `(s, ops)` where:
-
-* `s` is a list of ITensor indices of SiteType `st`, one for each qbit declared in the
-given code,
-* `ops` is a list of ITensor operators, one for each gate, in order.
-
-# Example
-
-```julia-repl
-julia> code = OpenQASM.parse("OPENQASM 2.0;\nqreg a[2];\ncx a[0], a[1];");
-
-julia> s, g = gates(code, "Qubit");
-
-julia> s
-2-element Vector{ITensors.Index{Int64}}:
- (dim=2|id=680|"Qubit,Site,a,n=1")
- (dim=2|id=758|"Qubit,Site,a,n=2")
-
-julia> g[1]
-ITensor ord=4 (dim=2|id=758|"Qubit,Site,a,n=2")' (dim=2|id=680|"Qubit,Site,a,n=1")' (dim=2|id=758|"Qubit,Site,a,n=2") (dim=2|id=680|"Qubit,Site,a,n=1")
-NDTensors.Dense{Float64, Vector{Float64}}
-```
-"""
-function gates(
-    code::OpenQASM.Types.MainProgram, st::AbstractString; warn_on_gate_redefinition
+function _parsegates(
+    code::OpenQASM.Types.MainProgram,
+    sites::Vector{<:Index},
+    st::AbstractString;
+    warn_on_gate_redefinition,
 )
-    sites = qbitsites(code, st)
-
     gatelist = ITensor[]
     for line in code.prog
         if line isa OpenQASM.Types.Instruction
@@ -281,6 +255,40 @@ function gates(
             eval_gate_definition(new_gate_method; warn_on_gate_redefinition)
         end
     end
+    return gatelist
+end
+
+"""
+    gates(code::OpenQASM.Types.MainProgram, st::AbstractString; warn_on_gate_redefinition)
+
+Create a list of gates (ITensor operators) as parsed from the given OpenQASM `code`,
+returning a tuple `(s, ops)` where:
+
+* `s` is a vector of ITensor indices of SiteType `st` (an index for each qbit declared in
+  `code`),
+* `ops` is a list of ITensor operators, one for each gate, in the appearance order in `code`.
+
+# Example
+
+```julia-repl
+julia> code = OpenQASM.parse("OPENQASM 2.0;\nqreg a[2];\ncx a[0], a[1];");
+
+julia> s, g = gates(code, "Qubit"; warn_on_gate_redefinition=false);
+
+julia> s
+2-element Vector{ITensors.Index{Int64}}:
+ (dim=2|id=680|"Qubit,Site,a,n=1")
+ (dim=2|id=758|"Qubit,Site,a,n=2")
+
+julia> g[1]
+ITensor ord=4 (dim=2|id=758|"Qubit,Site,a,n=2")' (dim=2|id=680|"Qubit,Site,a,n=1")' (dim=2|id=758|"Qubit,Site,a,n=2") (dim=2|id=680|"Qubit,Site,a,n=1")
+NDTensors.Dense{Float64, Vector{Float64}} ```
+"""
+function gates(
+    code::OpenQASM.Types.MainProgram, st::AbstractString; warn_on_gate_redefinition
+)
+    sites = qbitsites(code, st)
+    gatelist = _parsegates(code, sites, st; warn_on_gate_redefinition)
     return sites, gatelist
 end
 
@@ -295,6 +303,8 @@ would be generated from `code`.
 function gates(
     code::OpenQASM.Types.MainProgram, sites::Vector{<:Index}; warn_on_gate_redefinition
 )
+    # Determine whether _all_ indices in `sites` are of the Qubit or vQubit site type.
+    # The site type of these indices will determine the site type of the gates as well.
     commontags_s = commontags(sites...)
     common_stypes = _sitetypes(commontags_s)
     if "Qubit" in sitetypename.(common_stypes)
@@ -302,22 +312,16 @@ function gates(
     elseif "vQubit" in sitetypename.(common_stypes)
         st = "vQubit"
     else
-        error("Unrecognized SiteType: only \"Qubit\" and \"vQubit\" are allowed.")
+        error("unsupported site type: only \"Qubit\" and \"vQubit\" are allowed.")
     end
 
+    # Read how many qbits are declared by the input OpenQASM program, and check that there
+    # are as many site indices in `sites`.
     newsites = qbitsites(code, st)
     if length(newsites) != length(sites)
-        error("Sites not compatible with input OpenQASM code.")
+        error("input OpenQASM program declares $(length(newsites)) qbits, but " *
+              "only $(length(sites)) were provided to this function.")
     end
 
-    gates = ITensor[]
-    for line in code.prog
-        if line isa OpenQASM.Types.Instruction
-            push!(gates, parsegate(sites, line))
-        elseif line isa OpenQASM.Types.Gate
-            new_gate_method = definition(line, SiteType(st))
-            eval_gate_definition(new_gate_method; warn_on_gate_redefinition)
-        end
-    end
-    return gates
+    return _parsegates(code, sites, st; warn_on_gate_redefinition)
 end
