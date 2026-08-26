@@ -319,8 +319,10 @@ function gates(
     # are as many site indices in `sites`.
     newsites = qbitsites(code, st)
     if length(newsites) != length(sites)
-        error("input OpenQASM program declares $(length(newsites)) qbits, but " *
-              "only $(length(sites)) were provided to this function.")
+        error(
+            "input OpenQASM program declares $(length(newsites)) qbits, but " *
+            "only $(length(sites)) were provided to this function.",
+        )
     end
 
     return _parsegates(code, sites, st; warn_on_gate_redefinition)

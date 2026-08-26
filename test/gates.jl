@@ -197,7 +197,7 @@ function test_other_gates()
             gate("tdg", q[4]),
             gate("h", q[4]),
         ],
-        ITensors.op("Id", q[1], q[2], q[3], q[4])
+        ITensors.op("Id", q[1], q[2], q[3], q[4]),
     )
 end
 

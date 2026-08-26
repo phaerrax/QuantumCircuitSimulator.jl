@@ -107,7 +107,7 @@ function fullvector(v::MPS; qiskit=false)
 
     n = length(v)
     vec = Vector{ComplexF64}(undef, d^n)
-    for i in 1:(d^n)
+    for i in 1:(d ^ n)
         vec[i] = coefficient(v, i - 1; qiskit=qiskit)
     end
     return vec
@@ -128,7 +128,7 @@ function fullmatrix(m::MPO; qiskit=false)
 
     n = length(m)
     mat = Matrix{ComplexF64}(undef, d^n, d^n)
-    for i in 1:(d^n), j in 1:(d^n)
+    for i in 1:(d ^ n), j in 1:(d ^ n)
         mat[i, j] = coefficient(m, i - 1, j - 1; qiskit=qiskit)
     end
     return mat

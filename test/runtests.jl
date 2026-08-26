@@ -8,6 +8,8 @@ Conda.add(["qiskit", "qiskit-aer"])
 ENV["PYTHON"] = ""
 Pkg.build("PyCall")
 
+include("utils.jl")
+
 include("replicateqiskit.jl")
 
 @testset "Qiskit compatibility" begin

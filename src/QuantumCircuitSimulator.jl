@@ -13,8 +13,6 @@ using DataStructures,
     PauliStringTensors,
     RBNF
 
-include("utils.jl")
-
 export gate, GateName, @GateName_str
 include("gate.jl")
 include("gate_library.jl")
