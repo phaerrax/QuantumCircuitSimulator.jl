@@ -1,6 +1,6 @@
 name = "QuantumCircuitSimulator"
 uuid = "400a33f1-71bb-44d0-bc88-50d33f8b7a09"
-version = "0.8.7"
+version = "0.8.8"
 authors = ["Davide Ferracin <davide.ferracin@icloud.com> and contributors"]
 
 [deps]
@@ -21,6 +21,4 @@ Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 [compat]
 ITensors = ">= 0.4.1"
 LindbladVectorizedTensors = ">= 0.17.1"
-PauliStringTensors = "0.1.4"
-ProgressMeter = "1.10.2"
-julia = "1.6.7"
+julia = ">= 1.10"

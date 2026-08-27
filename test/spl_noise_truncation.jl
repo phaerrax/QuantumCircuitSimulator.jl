@@ -9,16 +9,7 @@ function random_two_site_paulistring(N)
     return PauliString(ps)
 end
 
-function reldist(x, y)
-    den = max(norm(x), norm(y))
-    if iszero(den)
-        return den
-    else
-        return norm(x - y) / den
-    end
-end
-
-function spl_noise_truncation(; N=8, atol=1e-10)
+function test_spl_noise_truncation(; N=8, atol=1e-10)
     # We build an artificial SPL noise model with random strings and coefficients.
     spl_dictionary = Dict{PauliString,Float64}()
     # There are at most 3N + 9(N-1) distinct 1-site and (contiguous) 2-site Pauli strings
@@ -42,14 +33,14 @@ function spl_noise_truncation(; N=8, atol=1e-10)
 
     identity = MPO(sites, "Id")
 
-    tests = [
-        reldist(noise_mpo, truncated_noise_mpo),
-        reldist(invnoise_mpo, truncated_invnoise_mpo),
-        reldist(apply(noise_mpo, invnoise_mpo), identity),
-        reldist(apply(invnoise_mpo, noise_mpo), identity),
-        reldist(apply(truncated_noise_mpo, truncated_invnoise_mpo), identity),
-        reldist(apply(truncated_invnoise_mpo, truncated_noise_mpo), identity),
-    ]
+    @test noise_mpo ≈ truncated_noise_mpo
+    @test invnoise_mpo ≈ truncated_invnoise_mpo
+    @test apply(noise_mpo, invnoise_mpo) ≈ identity
+    @test apply(invnoise_mpo, noise_mpo) ≈ identity
 
-    return all(tests .< atol)
+    # These two tests involve much more numerical work, so we need a looser tolerance.
+    @test apply(truncated_noise_mpo, truncated_invnoise_mpo) ≈ identity atol=1e-8
+    @test apply(truncated_invnoise_mpo, truncated_noise_mpo) ≈ identity atol=1e-8
+
+    return nothing
 end
