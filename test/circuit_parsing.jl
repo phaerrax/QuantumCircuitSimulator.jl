@@ -199,3 +199,15 @@ cry q[5], q[6];"""
     @test instructionsites(circ_instructions[2], sites) == q234
     @test instructionsites(circ_instructions[3], sites) == q56
 end
+
+function test_empty_gate()
+    circ = """OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[3];
+    gate empty(a) q1, q2 {}
+    x q[1];
+    empty(1) q[0], q[2];"""
+    circ = OpenQASM.parse(circ_str)
+    sites, gate_list = gates(circ, "Qubit"; warn_on_gate_redefinition=true)
+    @test gate_list[2] ≈ ITensors.op(I, sites[1], sites[3])
+end

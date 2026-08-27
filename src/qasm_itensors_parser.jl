@@ -89,6 +89,7 @@ function parsegate(sites::Vector{<:Index}, instr::OpenQASM.Types.Instruction)
     return g
 end
 
+compose_txt(a) = a
 compose_txt(a, b) = "compose($a, $b)"
 compose_txt(a, b...) = compose_txt(a, compose_txt(b...))
 
@@ -158,34 +159,39 @@ function definition(gate::OpenQASM.Types.Gate, st::SiteType)
     fn_cargs_declaration = ["$p::Real = cargs[$i]" for (i, p) in enumerate(params)]
 
     fn_body = []
-    for instr in gate.body
-        name = "\"" * instr.name * "\""
-        indices = [qa.name.str for qa in instr.qargs]
-        parameters = [qasmstring(ca) for ca in instr.cargs]
-        if isempty(parameters)
-            push!(fn_body, "gate(" * join([name; indices], ", ") * ")")
-        else
-            push!(
-                fn_body,
-                "gate(" *
-                join([name; indices], ", ") *
-                "; cargs=(" *
-                join(parameters, ",") *
-                "))",
-            )
+    if isempty(gate.body)
+        # The OpenQASM grammar allows defining gates with an empty body (with any number of
+        # numerical parameters and qbits). In this case, we assume that the empty-bodied
+        # gate is semantically equal to the identity on its declared qubits.  Since
+        # `gate("id", s::Index...)` already accepts any number of indices, we insert a
+        # single-element fn_body with the identity up front.  We also ignore any `cargs`
+        # that the gate may have in its declaration.
+        push!(fn_body, "gate(\"id\", " * join(qbits, ", ") * ")")
+    else
+        for instr in gate.body
+            name = "\"" * instr.name * "\""
+            indices = [qa.name.str for qa in instr.qargs]
+            parameters = [qasmstring(ca) for ca in instr.cargs]
+            if isempty(parameters)
+                push!(fn_body, "gate(" * join([name; indices], ", ") * ")")
+            else
+                push!(
+                    fn_body,
+                    "gate(" *
+                    join([name; indices], ", ") *
+                    "; cargs=(" *
+                    join(parameters, ",") *
+                    "))",
+                )
+            end
         end
     end
 
     # We transform the body so that the gates are correctly multiplied. We use the
     # `apply` function, i.e. `[a, b, c]` is turned into `apply(a, apply(b, c))`.
-    if length(fn_body) == 1  # TODO: what if length(fn_body) == 0?
-        str = join([fn_signature; fn_cargs_declaration; fn_body; "end"], "\n")
-    else
-        str = join(
-            [fn_signature; fn_cargs_declaration; compose_txt(reverse(fn_body)...); "end"],
-            "\n",
-        )
-    end
+    str = join(
+        [fn_signature; fn_cargs_declaration; compose_txt(reverse(fn_body)...); "end"], "\n"
+    )
     return str
 end
 
