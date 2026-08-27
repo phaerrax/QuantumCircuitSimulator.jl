@@ -49,16 +49,18 @@ Base.iterate(circ::QuantumCircuit, state) = iterate(circ.instructions, state)
 Base.push!(circ::QuantumCircuit, instr) = push!(circ.instructions, instr)
 
 """
-    findsites(instr::OpenQASM.Types.Instruction, sites::Vector{<:Index})
+    instructionsites(instr::OpenQASM.Types.Instruction, sites::Vector{<:Index})
 
-Return the list of indices within `sites` on which the instruction `instr` acts.
+Return the indices within `sites` on which the instruction `instr` acts.
 """
-function findsites(instr::OpenQASM.Types.Instruction, sites::Vector{<:ITensors.Index})
-    sitelist = Int[]
+function instructionsites(
+    instr::OpenQASM.Types.Instruction, sites::Vector{<:ITensors.Index}
+)
+    sitelist = ITensors.Index[]
     for qbit in string.(instr.qargs)
-        append!(sitelist, findall(hastags(qbit), s))
+        append!(sitelist, filter(hastags(qbit), sites))
     end
-    return sitelist
+    return unique(sitelist)  # Probably `unique` is unnecessary here, but just in case...
 end
 
 """

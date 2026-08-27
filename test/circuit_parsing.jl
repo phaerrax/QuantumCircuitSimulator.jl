@@ -1,4 +1,6 @@
-function test_parse()
+using QuantumCircuitSimulator: instructionsites
+
+function test_parse_big_circuit()
     circuit_str = """OPENQASM 2.0;
 include "qelib1.inc";
 qreg q[19];
@@ -167,5 +169,33 @@ x q[1];"""
     # tests that the circuit gets actually parsed, that a QuantumCircuit object is returned,
     # and that the output (well, the circuit dimensions) have not changed over time as
     # a result of some change in the code.
-    return depth(circ) == 14 && nqbits(circ) == 19
+    @test depth(circ) == 14 && nqbits(circ) == 19
+end
+
+function test_parse_instructions()
+    circuit_str = """OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[8];
+x q[1];
+ccx q[2], q[3], q[4];
+cry q[5], q[6];"""
+    circ = OpenQASM.parse(circuit_str)
+    circ_instructions = filter(line -> line isa OpenQASM.Types.Instruction, circ.prog)
+    sites = qbitsites(circ, "Qubit")
+    # Note that sites[k] corresponds to qubit q[k-1] in the circuit, not q[k].
+    q1 = sites[[2]]
+    q234 = sites[[3, 4, 5]]
+    q56 = sites[[6, 7]]
+    @test instructionsites(circ_instructions[1], sites) == q1
+    @test instructionsites(circ_instructions[2], sites) == q234
+    @test instructionsites(circ_instructions[3], sites) == q56
+
+    # Robustness check: we throw some fake indices in the mix and check if the result
+    # doesn't change (`findsites` should not return the indices based on their position in
+    # the list).
+    fake_inds = [addtags(siteind("Qubit"), "Site,q[$n]") for n in ['a', 'b']]
+    sites = [fake_inds[1]; sites[1:3]; fake_inds[2]; sites[4:end]]
+    @test instructionsites(circ_instructions[1], sites) == q1
+    @test instructionsites(circ_instructions[2], sites) == q234
+    @test instructionsites(circ_instructions[3], sites) == q56
 end
