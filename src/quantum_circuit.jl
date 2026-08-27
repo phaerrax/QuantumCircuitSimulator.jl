@@ -156,37 +156,53 @@ function quantumcircuit(
 
     for line in code.prog
         if line isa OpenQASM.Types.Instruction
-            # Parse the gate instructions
-            g = parsegate(circsites, line)
+            g = parsegate(circsites, line)  # build the ITensor for this gate
+            g_sites = inds(g; plev=0)  # qbits/sites the ITensors acts on
 
-            g_sites = inds(g; plev=0)  # sites on which the gate is defined
-            # The gate will need to be placed in the "earliest" layer such that
-            # itself _and all later layers_ have free spots in each site in `g_sites`.
-            # This should mimic Qiskit's "asap" layering algorithm.
+            # Now we need to decide which layer `g` must go into.  It will need to be placed
+            # in the "earliest" layer such that `g` itself _and all later layers_ have free
+            # spots in each site in `g_sites`. (This should mimic Qiskit's "asap" layering
+            # algorithm.) In other words, `g` can share a layer with earlier gates only if
+            # none of them touch `g_sites`, and clearly it can't be placed before an earlier
+            # gate that touches one of its qbits.
+            # So, starting from the newest layer and walking backward, `g` can keep sliding
+            # earlier as long as `g_sites` are completely free in every layer it passes
+            # through, and it stops at the first (i.e., most recent) layer where one of its
+            # qbits is already occupied.
 
             # Check whether the gate fits in each of the latest group of layers.
             # Start from the last of the already formed layers and go backwards, finding
             # the latest one where the pending gate doesn't fit: the _next_ one will be the
             # layer we need to put `g` in.
 
-            idx = 0  # starting point for the iteration (the "best possible" scenario)
+            idx = 0
             @debug "Gate sites: " * join(_qbittag.(g_sites), " ")
+            # We start from assuming `idx == 0` and then in the following loop we scan the
+            # already existing layers to find out possible obstructions. If no obstruction
+            # is found, then the loop never breaks (all existing layers are free for
+            # `g_sites`, or `circ` is empty) and `idx` stays zero, signalling that `g` can
+            # be placed in the very first layer.
+
             for (j, gl) in Iterators.reverse(enumerate(circ))
+                # We walk from the last layer back to the first.
                 actual_layer_idx = j
                 @debug "Checking layer $actual_layer_idx. Free spots: " *
                     join(_qbittag.(freesites(circ, gl)), " ")
                 if !issubset(g_sites, freesites(circ, gl))
+                    # Then layer `j` already uses one of the qbits in `g`, so the layer is
+                    # the most recent one that blocks `g`; consequently, `g` must go in
+                    # layer `j+1` (the layer right after the blocker).
                     @debug "No space available on this layer."
                     idx = j
                     break
                 end
-                # else the pending gate can "pass through" the current layer and we go on
-                # to check the previous layer, to see if it fits there.
+                # else: `g`'s qubits are all free in this layer, so we keep looking further
+                # back.
             end
 
             if idx + 1 > depth(circ)
-                # This means that the first "blocking" gate is already the last one, so
-                # we need to add a new layer to the circuit.
+                # This means that the first "blocking" gate is already the last one (or
+                # `circ` is empty), so we need to add a new layer to the circuit.
                 @debug "New layer required for gate \"$line\"."
                 push!(circ, [g])
                 @debug "Added new layer at the end: new circuit length is $(depth(circ))."
@@ -211,7 +227,7 @@ function quantumcircuit(
             new_gate_method = definition(line, SiteType(st))
             eval_gate_definition(new_gate_method; warn_on_gate_redefinition)
         elseif line isa OpenQASM.Types.Barrier
-            @warn "Barriers are not (yet) implemented. This line will be skipped."
+            error("barriers are not implemented.")
         end
     end
 
