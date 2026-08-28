@@ -20,17 +20,34 @@ sequence of gates, or instructions, arranged in layers.
 struct QuantumCircuit
     sites::Vector{<:ITensors.Index}
     instructions::Vector{GateLayer}
+    function QuantumCircuit(
+        sites::Vector{<:ITensors.Index}, instructions::Vector{GateLayer}
+    )
+        # Sanity check: each gate layer in `instructions` contains ITensors defined on
+        # `sites`, and no other indices.
+        for (n, gl) in enumerate(instructions)
+            bad_qbits = setdiff(occupiedsites(gl), sites)
+            if !isempty(bad_qbits)
+                error(
+                    "gates and sites do not match: layer $n contains gate(s) acting on " *
+                    "$(join(_qbittag.(bad_qbits), ", ")), which are not among the " *
+                    "circuit sites.",
+                )
+            end
+        end
+        return new(sites, instructions)
+    end
 end
 
 ITensorMPS.siteinds(circ::QuantumCircuit) = circ.sites
 instructions(circ::QuantumCircuit) = circ.instructions
 
 """
-    quantumcircuit(sites)
+    QuantumCircuit(sites)
 
 Return an empty circuit, in which the qbit array is defined but which contains no gates. 
 """
-function quantumcircuit(sites)
+function QuantumCircuit(sites)
     return QuantumCircuit(sites, GateLayer[])
 end
 
@@ -47,6 +64,15 @@ Base.lastindex(circ::QuantumCircuit) = lastindex(circ.instructions)
 Base.iterate(circ::QuantumCircuit) = iterate(circ.instructions)
 Base.iterate(circ::QuantumCircuit, state) = iterate(circ.instructions, state)
 Base.push!(circ::QuantumCircuit, instr) = push!(circ.instructions, instr)
+
+"""
+    occupiedsites(gl::GateLayer)
+
+Return the indices within `sites` on which the gates in the `gl` layer act.
+"""
+function occupiedsites(gl::GateLayer)
+    return collect(Iterators.flatten(inds.(gl; plev=0)))
+end
 
 """
     instructionsites(instr::OpenQASM.Types.Instruction, sites::Vector{<:Index})
@@ -72,7 +98,7 @@ Return a list of the sites in `sites` that are not acted upon by any gate from t
 layer.
 """
 function freesites(sites::Vector{<:ITensors.Index}, gl::GateLayer)
-    return setdiff(sites, collect(Iterators.flatten(inds.(gl; plev=0))))
+    return setdiff(sites, occupiedsites(gl))
 end
 
 """
@@ -168,11 +194,12 @@ function _qbittag(s)
 end
 
 """
-    quantumcircuit(code::OpenQASM.Types.MainProgram; kwargs...)
+    QuantumCircuit(code::OpenQASM.Types.MainProgram; kwargs...)
+    QuantumCircuit(code::AbstractString; kwargs...)
 
-Parse the circuit defined in `code` as a `QuantumCircuit` object, structuring the sequence
-of gates in layer. The gates are added to the layers in a way that _should_ resemble
-the "ASAP" policy by Qiskit.
+Parse the circuit defined in `code` (either a string or an already parsed OpenQASM program)
+as a `QuantumCircuit` object, structuring the sequence of gates in layer. The gates are
+added to the layers in a way that _should_ resemble the "ASAP" policy by Qiskit.
 
 # Keyword arguments
 
@@ -183,7 +210,7 @@ the "ASAP" policy by Qiskit.
 * `warn_on_gate_redefinition` if `false` (default), ignore the "Method overwritten" warnings
   that the Julia compiler might print whenever a gate definition overwrites an existing one.
 """
-function quantumcircuit(
+function QuantumCircuit(
     code::OpenQASM.Types.MainProgram;
     operator_picture=false,
     warn_on_gate_redefinition=false,
@@ -191,7 +218,7 @@ function quantumcircuit(
     st = (operator_picture ? "vQubit" : "Qubit")
     circsites = qbitsites(code, st)
 
-    circ = quantumcircuit(circsites)
+    circ = QuantumCircuit(circsites)
 
     # Maps each site to the earliest layer index that a gate acting on it is allowed to be
     # placed after, due to a previously encountered barrier on that site. A barrier doesn't
@@ -256,6 +283,10 @@ function quantumcircuit(
     end
 
     return circ
+end
+
+function QuantumCircuit(code::AbstractString; kwargs...)
+    return QuantumCircuit(OpenQASM.parse(code); kwargs...)
 end
 
 """

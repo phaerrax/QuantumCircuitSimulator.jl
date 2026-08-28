@@ -163,8 +163,8 @@ x q[11];
 x q[9];
 x q[5];
 x q[1];"""
-    circ = quantumcircuit(OpenQASM.parse(circuit_str))
-    # Depth has been calculated with `quantumcircuit` at the time this test function was
+    circ = QuantumCircuit(OpenQASM.parse(circuit_str))
+    # Depth has been calculated with `QuantumCircuit` at the time this test function was
     # written. Ideally we should determine it with other means. If anything, this function
     # tests that the circuit gets actually parsed, that a QuantumCircuit object is returned,
     # and that the output (well, the circuit dimensions) have not changed over time as
@@ -225,7 +225,7 @@ function test_parse_barriers()
     x q[0];
     x q[1];
     x q[2];"""
-    circ = quantumcircuit(OpenQASM.parse(circuit_str))
+    circ = QuantumCircuit(OpenQASM.parse(circuit_str))
     q0, q1, q2, q3 = siteinds(circ)
     @test depth(circ) == 2
     # Layer 1: the first `x q[0]` and `x q[2]`, plus the `x q[1]` that slid all the way
@@ -245,7 +245,7 @@ function test_parse_barriers()
     x q[1];
     barrier q[2];
     x q[2];"""
-    circ = quantumcircuit(OpenQASM.parse(circuit_str))
+    circ = QuantumCircuit(OpenQASM.parse(circuit_str))
     @test depth(circ) == 1
 
     # Nothing can slide past a barrier over every qbit in the circuit.
@@ -256,7 +256,7 @@ function test_parse_barriers()
     barrier q[0], q[1];
     x q[0];
     x q[1];"""
-    circ = quantumcircuit(OpenQASM.parse(circuit_str))
+    circ = QuantumCircuit(OpenQASM.parse(circuit_str))
     q0, q1 = siteinds(circ)
     @test depth(circ) == 2
     @test freesites(circ, circ[1]) == [q1]
@@ -273,4 +273,24 @@ function test_empty_gate()
     circ = OpenQASM.parse(circ_str)
     sites, gate_list = gates(circ, "Qubit"; warn_on_gate_redefinition=true)
     @test gate_list[2] ≈ ITensors.op(I, sites[1], sites[3])
+end
+
+function test_layers_outside_domain()
+    # Test the inner QuantumCircuit constructor by supplying an array of sites and some
+    # gates which act on other sites: it should throw an error.
+    circ = """OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[3];
+    gate empty(a) q1, q2 {}
+    x q[1];
+    cx q[0], q[2];
+    crz(pi/3) q[1], q[2];
+    sx q[0];"""
+
+    # First we build the quantum circuit normally, then we remove one of the sites.
+    qc = QuantumCircuit(circ)
+    sites = siteinds(qc)
+
+    sites = sites[[1, 3]]
+    @test_throws "gates and sites do not match:" QuantumCircuit(sites, instructions(qc))
 end
