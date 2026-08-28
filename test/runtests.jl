@@ -64,4 +64,6 @@ include("circuit_parsing.jl")
 @testset "Circuit parsing" begin
     test_parse_big_circuit()
     test_parse_instructions()
+    test_barrier_sites()
+    test_parse_barriers()
 end

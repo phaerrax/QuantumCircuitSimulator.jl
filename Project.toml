@@ -1,6 +1,6 @@
 name = "QuantumCircuitSimulator"
 uuid = "400a33f1-71bb-44d0-bc88-50d33f8b7a09"
-version = "0.8.8"
+version = "0.8.9"
 authors = ["Davide Ferracin <davide.ferracin@icloud.com> and contributors"]
 
 [deps]

@@ -1,4 +1,4 @@
-using QuantumCircuitSimulator: instructionsites
+using QuantumCircuitSimulator: instructionsites, freesites
 
 function test_parse_big_circuit()
     circuit_str = """OPENQASM 2.0;
@@ -198,6 +198,69 @@ cry q[5], q[6];"""
     @test instructionsites(circ_instructions[1], sites) == q1
     @test instructionsites(circ_instructions[2], sites) == q234
     @test instructionsites(circ_instructions[3], sites) == q56
+end
+
+function test_barrier_sites()
+    circuit_str = """OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[4];
+    x q[0];
+    barrier q[1], q[3];"""
+    circ = OpenQASM.parse(circuit_str)
+    barriers = filter(line -> line isa OpenQASM.Types.Barrier, circ.prog)
+    sites = qbitsites(circ, "Qubit")
+    # Note that sites[k] corresponds to qubit q[k-1] in the circuit, not q[k].
+    @test instructionsites(barriers[1], sites) == sites[[2, 4]]
+end
+
+function test_parse_barriers()
+    # A barrier only constrains the qbits it acts on: gates on unrelated qbits should keep
+    # sliding back as usual, right through the barrier.
+    circuit_str = """OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[4];
+    x q[0];
+    x q[2];
+    barrier q[0], q[2];
+    x q[0];
+    x q[1];
+    x q[2];"""
+    circ = quantumcircuit(OpenQASM.parse(circuit_str))
+    q0, q1, q2, q3 = siteinds(circ)
+    @test depth(circ) == 2
+    # Layer 1: the first `x q[0]` and `x q[2]`, plus the `x q[1]` that slid all the way
+    # back, since it wasn't affected by the barrier.
+    @test freesites(circ, circ[1]) == [q3]
+    # Layer 2: only the second `x q[0]` and `x q[2]`, stopped by the barrier.
+    @test freesites(circ, circ[2]) == [q1, q3]
+
+    # A barrier should slide back as far as possible, like a gate would.  It must only
+    # depend on the qbits it actually acts on. Here, the barrier is on q[2], which hasn't
+    # been touched yet, so it doesn't force the following `x q[2]` into a new layer even
+    # though q[0] and q[1] already have one gate each.
+    circuit_str = """OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[3];
+    x q[0];
+    x q[1];
+    barrier q[2];
+    x q[2];"""
+    circ = quantumcircuit(OpenQASM.parse(circuit_str))
+    @test depth(circ) == 1
+
+    # Nothing can slide past a barrier over every qbit in the circuit.
+    circuit_str = """OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    x q[0];
+    barrier q[0], q[1];
+    x q[0];
+    x q[1];"""
+    circ = quantumcircuit(OpenQASM.parse(circuit_str))
+    q0, q1 = siteinds(circ)
+    @test depth(circ) == 2
+    @test freesites(circ, circ[1]) == [q1]
+    @test freesites(circ, circ[2]) == ITensors.Index[]
 end
 
 function test_empty_gate()
