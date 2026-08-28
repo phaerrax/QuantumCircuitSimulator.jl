@@ -5,7 +5,7 @@ A sparse Pauli-Lindblad noise model, represented by a dictionary of generators a
 of qbits it acts on.
 """
 struct SPLNoiseModel
-    parameters::Dict{PauliString,Real}
+    parameters::Dict{PauliString,<:Real}
     siteindices::Vector{Int}
     # For each Pauli string `p` in `keys(parameters)`, the factor `p[j]` acts on the qbit
     # at position `siteindices[j]`.
@@ -28,6 +28,12 @@ end
 
 function SPLNoiseModel(dict::Dict{PauliString,<:Real})
     strlen = length(first(keys(dict)))
+    return SPLNoiseModel(dict, 1:strlen)
+end
+
+function SPLNoiseModel(dict::Dict{AbstractString,<:Real})
+    strlen = length(first(keys(dict)))
+    dict = Dict(PauliString(p) => coeff for (p, coeff) in dict)
     return SPLNoiseModel(dict, 1:strlen)
 end
 
