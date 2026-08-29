@@ -10,7 +10,7 @@ defined in the given code.
 # Example
 
 ```julia-repl
-julia> code = OpenQASM.parse("OPENQASM 2.0;\nqreg a[3];\nqreg b[2];");
+julia> code = OpenQASM.parse("OPENQASM 2.0; qreg a[3]; qreg b[2];");
 
 julia> qbitsites(code, "Qubit")
 5-element Vector{ITensors.Index{Int64}}:
@@ -277,7 +277,7 @@ returning a tuple `(s, ops)` where:
 # Example
 
 ```julia-repl
-julia> code = OpenQASM.parse("OPENQASM 2.0;\nqreg a[2];\ncx a[0], a[1];");
+julia> code = OpenQASM.parse("OPENQASM 2.0; qreg a[2]; cx a[0], a[1];");
 
 julia> s, g = gates(code, "Qubit"; warn_on_gate_redefinition=false);
 
@@ -288,7 +288,8 @@ julia> s
 
 julia> g[1]
 ITensor ord=4 (dim=2|id=758|"Qubit,Site,a,n=2")' (dim=2|id=680|"Qubit,Site,a,n=1")' (dim=2|id=758|"Qubit,Site,a,n=2") (dim=2|id=680|"Qubit,Site,a,n=1")
-NDTensors.Dense{Float64, Vector{Float64}} ```
+NDTensors.Dense{Float64, Vector{Float64}}
+```
 """
 function gates(
     code::OpenQASM.Types.MainProgram, st::AbstractString; warn_on_gate_redefinition

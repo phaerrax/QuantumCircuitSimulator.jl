@@ -156,37 +156,6 @@ function lastblockinglayer(circ::QuantumCircuit, sites)
     return idx
 end
 
-"""
-    split_by(f, a::Vector; keeptrue=true)
-
-Split the vector `a` in subvectors on wherever `f` is `true`. If `keeptrue` is true, the
-elements of `a` such that `f(a)` is `true` are kept, and will be placed at the end of each
-subvector.
-
-# Source
-
-https://stackoverflow.com/a/63739895/4160978
-"""
-function split_by(f, a::Vector; keeptrue=true)
-    result = Vector{typeof(view(a, 1:0))}()
-    l = firstindex(a)
-    r = firstindex(a)
-    while r <= lastindex(a)
-        if f(a[r])
-            if keeptrue
-                push!(result, @view(a[l:r]))
-            else
-                push!(result, @view(a[l:(r - 1)]))
-            end
-            l = r + 1
-        end
-        r += 1
-    end
-    push!(result, @view(a[l:end]))
-
-    return result
-end
-
 function _qbittag(s)
     taglist = string.(collect(tags(s)))
     idx = findfirst(t -> contains(t, "[") && contains(t, "]"), taglist)

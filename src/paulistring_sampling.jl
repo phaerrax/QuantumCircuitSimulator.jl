@@ -40,10 +40,10 @@ end
 Sample `nsamples` Pauli strings from `v` and compute their overlap with the MPS.
 Return a pair `ps, overlaps` where `overlaps[k]` is the coefficient of the `ps[k]`
 component of `v`: this means that if we write `v` as a linear combination of Pauli
-strings ``v = ∑ₖ cₖσₖ`` then `overlaps[k]` is the coefficient ``cₖ``.
+strings ``v = ∑_k c_kσ_k`` then `overlaps[k]` is the coefficient ``c_k``.
 
 Note that the MPS of a Pauli string is not normalized in the Hilbert-Schmidt inner
-product ``⟨A,B⟩ = tr(A† B)``: the norm of a Pauli string of length `N` is ``2^(N/2)``.
+product ``⟨A,B⟩ = \\tr(\\adj{A} B)``: the norm of a Pauli string of length `N` is `2^(N/2)`.
 
 If `progress` is `true`, a progress bar is displayed while sampling.
 """
@@ -97,12 +97,12 @@ where:
 
 * `ps` is a Pauli string (a PauliString object)
 * `coeff` is its coefficient within `v`
-* `freq` is the frequency with which it was sampled (it should equal ``|coeff|²`` in the
-    ``nsamples → ∞`` limit).
+* `freq` is the frequency with which it was sampled (it should equal `|coeff|^2` in the
+    limit where `nsamples` goes to infinity).
 
-The list is shown from the most to least relevant component, i.e. highest to the lowest
+The list is shown from the most to least relevant component, i.e. highest to lowest
 modulus of the coefficient. It can be cutoff after a certain maximum number of
-strings, or below a set frequency.
+strings (`maxn`), or below a set frequency (`cutoff`).
 
 If `progress` is `true`, a progress bar is displayed while sampling.
 """
